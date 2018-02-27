@@ -1,9 +1,9 @@
-import { Controller } from './lib/controller';
+import { ResourceController } from './resource.controller';
 
 import { IssueDocument }				  from './issue.model';
 import { ChapterDocument, ChapterSchema } from './chapter.model';
 
-export class ChapterController extends Controller<ChapterDocument> {
+export class ChapterController extends ResourceController<ChapterDocument> {
 	constructor() {
 		super('Chapter', ChapterSchema);
 

@@ -1,16 +1,16 @@
-import { Document, Schema } from 'mongoose';
+import { Schema } from 'mongoose';
 
-export interface Issue {
+import { Resource, ResourceDocument, UserRef } from './resource.model';
+
+export interface Issue extends Resource {
 	title: string;
 	description: string;
 	volumeNumber: number;
 	issueNumber: number;
 	publishedAt: Date;
-	createdAt: Date;
-	modifiedAt: Date;
 }
 
-export interface IssueDocument extends Issue, Document {}
+export interface IssueDocument extends Issue, ResourceDocument {}
 
 export let IssueSchema = new Schema({
 	title: String,
@@ -18,13 +18,8 @@ export let IssueSchema = new Schema({
 	volumeNumber: Number,
 	issueNumber: Number,
 	publishedAt: Date,
+	createdBy: UserRef,
 	createdAt: Date,
+	modifiedBy: UserRef,
 	modifiedAt: Date
-}).pre('save', function(next) {
-	this.modifiedAt = new Date();
-
-	if (!this.createdAt)
-		this.createdAt = this.modifiedAt;
-
-	next();
 });

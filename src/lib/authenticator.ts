@@ -5,8 +5,6 @@ import * as bcrypt from 'bcrypt';
 
 import { promisify } from './promisify';
 
-interface Session { session: any }
-
 export interface UserData {
 	id?: string;
 	username: string;
@@ -26,12 +24,12 @@ export abstract class Authenticator {
 	protected abstract findUser(username: string): Promise<UserData>;
 	protected abstract createUser(username: string, passwordHash: string): Promise<UserData>;
 
-	public isAuthenticated(req: Request & Session, res: Response, next: NextFunction) {
+	public isAuthenticated(req: Request, res: Response, next: NextFunction) {
 		// console.log(req.session.userId);
 		next();
 	}
 
-	private logIn(req: Request & Session, res: Response) {
+	private logIn(req: Request, res: Response) {
 		this.findUser(req.body.username).then((user: UserData) => {
 			if (user == null) throw new Error('Invalid Username');
 			bcrypt.compare(req.body.password, user.passwordHash)
@@ -46,13 +44,13 @@ export abstract class Authenticator {
 		});
 	}
 
-	private logOut(req: Request & Session, res: Response) {
+	private logOut(req: Request, res: Response) {
 		promisify(req.session.destroy.bind(req.session))
 		.then(() => res.sendStatus(204))
 		.catch((err: Error) => res.status(500).json(err));
 	}
 
-	private register(req: Request & Session, res: Response) {
+	private register(req: Request, res: Response) {
 		this.findUser(req.body.username)
 		.then((user: UserData) => {
 			if (user != null) throw new Error('Username already exists');

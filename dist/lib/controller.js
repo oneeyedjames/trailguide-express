@@ -66,15 +66,15 @@ class Controller {
             });
         }
     }
-    canRead(doc) {
-        return true;
-    }
-    canEdit(doc) {
-        return true;
-    }
-    canDelete(doc) {
-        return true;
-    }
+    canRead(doc) { return true; }
+    canEdit(doc) { return true; }
+    canDelete(doc) { return true; }
+    beforeCreate(doc) { return doc; }
+    afterCreate(doc) { return doc; }
+    beforeUpdate(doc) { return doc; }
+    afterUpdate(doc) { return doc; }
+    beforeDelete(doc) { return doc; }
+    afterDelete(doc) { return doc; }
     getAll(req, resp) {
         if (this.canRead()) {
             promisify_1.promisify(this.model.find.bind(this.model))
@@ -93,8 +93,11 @@ class Controller {
     }
     create(req, resp) {
         if (this.canEdit()) {
-            promisify_1.promisify(this.model.create.bind(this.model), req.body)
-                .then((res) => resp.status(201).json(this.addLinks(res, req)))
+            let doc = new this.model(req.body);
+            this.beforeCreate(doc).save()
+                .then((doc) => this.afterCreate(doc))
+                .then((doc) => this.addLinks(doc, req))
+                .then((doc) => resp.status(201).json(doc))
                 .catch((err) => resp.status(500).json(err));
         }
         else {
@@ -104,14 +107,20 @@ class Controller {
     update(req, resp) {
         promisify_1.promisify(this.model.findById.bind(this.model), req.params.id)
             .then(this.authorize(this.canEdit.bind(this)))
-            .then((doc) => doc.set(req.body).save())
-            .then((doc) => resp.json(this.addLinks(doc, req)))
+            .then((doc) => doc.set(req.body))
+            .then((doc) => this.beforeUpdate(doc))
+            .then((doc) => doc.save())
+            .then((doc) => this.afterUpdate(doc))
+            .then((doc) => this.addLinks(doc, req))
+            .then((doc) => resp.json(doc))
             .catch(this.error(resp));
     }
     delete(req, resp) {
         promisify_1.promisify(this.model.findById.bind(this.model), req.params.id)
             .then(this.authorize(this.canDelete.bind(this)))
+            .then((doc) => this.beforeDelete(doc))
             .then((doc) => doc.remove())
+            .then((doc) => this.afterDelete(doc))
             .then((doc) => resp.sendStatus(204))
             .catch(this.error(resp));
     }

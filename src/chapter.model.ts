@@ -1,18 +1,18 @@
-import { Document, Schema } from 'mongoose';
+import { Schema } from 'mongoose';
+
+import { Resource, ResourceDocument, UserRef } from './resource.model';
 
 const ObjectId = Schema.Types.ObjectId;
 
-export interface Chapter {
+export interface Chapter extends Resource {
 	issue: typeof ObjectId;
 	title: string;
 	description: string;
 	scripture: string;
 	publishedAt: Date;
-	createdAt: Date;
-	modifiedAt: Date;
 }
 
-export interface ChapterDocument extends Chapter, Document {}
+export interface ChapterDocument extends Chapter, ResourceDocument {}
 
 export let ChapterSchema = new Schema({
 	issue: {
@@ -24,13 +24,8 @@ export let ChapterSchema = new Schema({
 	description: String,
 	scripture: String,
 	publishedAt: Date,
+	createdBy: UserRef,
 	createdAt: Date,
+	modifiedBy: UserRef,
 	modifiedAt: Date
-}).pre('save', function(next) {
-	this.modifiedAt = new Date();
-
-	if (!this.createdAt)
-		this.createdAt = this.modifiedAt;
-
-	next();
 });

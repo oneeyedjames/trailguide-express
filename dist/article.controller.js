@@ -1,8 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const controller_1 = require("./lib/controller");
+const resource_controller_1 = require("./resource.controller");
 const article_model_1 = require("./article.model");
-class ArticleController extends controller_1.Controller {
+class ArticleController extends resource_controller_1.ResourceController {
     constructor() {
         super('Article', article_model_1.ArticleSchema);
         this.setRoutes('/articles', '/article');

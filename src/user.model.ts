@@ -1,4 +1,4 @@
-import { Document, Schema } from 'mongoose';
+import { Document, Schema, HookNextFunction } from 'mongoose';
 
 export interface User {
 	username: string;
@@ -14,7 +14,7 @@ export let UserSchema = new Schema({
 	passwordHash: String,
 	createdAt: Date,
 	modifiedAt: Date
-}).pre('save', function(next) {
+}).pre('save', (next: HookNextFunction) => {
 	this.modifiedAt = new Date();
 
 	if (!this.createdAt)

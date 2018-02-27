@@ -102,17 +102,16 @@ export class Controller<T extends Document> {
 		}
 	}
 
-	protected canRead(doc?: T): boolean {
-		return true;
-	}
+	protected canRead(doc?: T): boolean { return true; }
+	protected canEdit(doc?: T): boolean { return true; }
+	protected canDelete(doc: T): boolean { return true; }
 
-	protected canEdit(doc?: T): boolean {
-		return true;
-	}
-
-	protected canDelete(doc: T): boolean {
-		return true;
-	}
+	protected beforeCreate(doc: T): T { return doc; }
+	protected afterCreate(doc: T): T { return doc; }
+	protected beforeUpdate(doc: T): T { return doc; }
+	protected afterUpdate(doc: T): T { return doc; }
+	protected beforeDelete(doc: T): T { return doc; }
+	protected afterDelete(doc: T): T { return doc; }
 
 	private getAll(req: Request, resp: Response) {
 		if (this.canRead()) {
@@ -133,8 +132,12 @@ export class Controller<T extends Document> {
 
 	private create(req: Request, resp: Response) {
 		if (this.canEdit()) {
-			promisify<T[]>(this.model.create.bind(this.model), req.body)
-			.then((res: T[]) => resp.status(201).json(this.addLinks(res, req)))
+			let doc = new this.model(req.body);
+
+			this.beforeCreate(doc).save()
+			.then((doc: T) => this.afterCreate(doc))
+			.then((doc: T) => this.addLinks(doc, req))
+			.then((doc: T) => resp.status(201).json(doc))
 			.catch((err: any) => resp.status(500).json(err));
 		} else {
 			resp.sendStatus(401);
@@ -144,15 +147,21 @@ export class Controller<T extends Document> {
 	private update(req: Request, resp: Response) {
 		promisify<T>(this.model.findById.bind(this.model), req.params.id)
 		.then(this.authorize(this.canEdit.bind(this)))
-		.then((doc: T) => doc.set(req.body).save())
-		.then((doc: T) => resp.json(this.addLinks(doc, req)))
+		.then((doc: T) => doc.set(req.body))
+		.then((doc: T) => this.beforeUpdate(doc))
+		.then((doc: T) => doc.save())
+		.then((doc: T) => this.afterUpdate(doc))
+		.then((doc: T) => this.addLinks(doc, req))
+		.then((doc: T) => resp.json(doc))
 		.catch(this.error(resp));
 	}
 
 	private delete(req: Request, resp: Response) {
 		promisify<T>(this.model.findById.bind(this.model), req.params.id)
 		.then(this.authorize(this.canDelete.bind(this)))
+		.then((doc: T) => this.beforeDelete(doc))
 		.then((doc: T) => doc.remove())
+		.then((doc: T) => this.afterDelete(doc))
 		.then((doc: T) => resp.sendStatus(204))
 		.catch(this.error(resp));
 	}

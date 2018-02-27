@@ -6,7 +6,7 @@ exports.UserSchema = new mongoose_1.Schema({
     passwordHash: String,
     createdAt: Date,
     modifiedAt: Date
-}).pre('save', function (next) {
+}).pre('save', (next) => {
     this.modifiedAt = new Date();
     if (!this.createdAt)
         this.createdAt = this.modifiedAt;
