@@ -52,19 +52,9 @@ export class ResourceController<T extends ResourceDocument> extends Controller<T
 		return doc;
 	}
 
-	protected afterCreate(doc: T): T {
-		console.log(doc);
-		return doc;
-	}
-
 	protected beforeUpdate(doc: T): T {
 		doc.modifiedBy = this.user.id;
 		doc.modifiedAt = new Date();
-		return doc;
-	}
-
-	protected afterUpdate(doc: T): T {
-		console.log(doc);
 		return doc;
 	}
 

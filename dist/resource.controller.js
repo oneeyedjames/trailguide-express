@@ -34,17 +34,9 @@ class ResourceController extends controller_1.Controller {
         doc.modifiedAt = doc.createdAt = new Date();
         return doc;
     }
-    afterCreate(doc) {
-        console.log(doc);
-        return doc;
-    }
     beforeUpdate(doc) {
         doc.modifiedBy = this.user.id;
         doc.modifiedAt = new Date();
-        return doc;
-    }
-    afterUpdate(doc) {
-        console.log(doc);
         return doc;
     }
     getUser() {
