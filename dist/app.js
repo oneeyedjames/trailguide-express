@@ -8,6 +8,7 @@ const MongoStore = connectMongo(session);
 const bodyParser = require("body-parser");
 const cookieParser = require("cookie-parser");
 const user_controller_1 = require("./user.controller");
+const role_controller_1 = require("./role.controller");
 const issue_controller_1 = require("./issue.controller");
 const chapter_controller_1 = require("./chapter.controller");
 const article_controller_1 = require("./article.controller");
@@ -27,14 +28,16 @@ class Application {
             })
         }))
             .use(this.enableCors)
-            .use('/api', user_controller_1.default.router)
-            .use('/api', issue_controller_1.default.router)
-            .use('/api', chapter_controller_1.default.router)
-            .use('/api', article_controller_1.default.router)
             .use('/api/v1', user_controller_1.default.router)
+            .use('/api/v1', role_controller_1.default.router)
             .use('/api/v1', issue_controller_1.default.router)
             .use('/api/v1', chapter_controller_1.default.router)
-            .use('/api/v1', article_controller_1.default.router);
+            .use('/api/v1', article_controller_1.default.router)
+            .use('/api', user_controller_1.default.router)
+            .use('/api', role_controller_1.default.router)
+            .use('/api', issue_controller_1.default.router)
+            .use('/api', chapter_controller_1.default.router)
+            .use('/api', article_controller_1.default.router);
     }
     listen(port) {
         port = this.normalizePort(port) || 3000;

@@ -4,10 +4,49 @@ const mongoose_1 = require("mongoose");
 const promisify_1 = require("./lib/promisify");
 const authenticator_1 = require("./lib/authenticator");
 const user_model_1 = require("./user.model");
+const role_model_1 = require("./role.model");
 class UserController extends authenticator_1.Authenticator {
     constructor() {
         super();
         this.model = mongoose_1.model('User', user_model_1.UserSchema);
+        // const roleModel = model<RoleDocument>('Role', RoleSchema);
+        //
+        // this.router.use((req, resp, next) => {
+        // 	this.findUser('admin').then((user: UserDocument) => {
+        // 		console.log(user);
+        //
+        // 		if (user.roles.length == 0) {
+        // 			promisify<RoleDocument>(roleModel.findOne.bind(roleModel), {
+        // 				title: 'Administrator'
+        // 			}).then((role: RoleDocument) => {
+        // 				if (!role) {
+        // 					return promisify<RoleDocument>(roleModel.create.bind(roleModel), {
+        // 						title: 'Administrator',
+        // 						description: 'This is an administrator.',
+        // 						permissions: [{
+        // 							action: 'create',
+        // 							resource: 'issue',
+        // 							override: true
+        // 						}, {
+        // 							action: 'update',
+        // 							resource: 'issue',
+        // 							override: true
+        // 						}, {
+        // 							action: 'delete',
+        // 							resource: 'issue',
+        // 							override: true
+        // 						}]
+        // 					});
+        // 				}
+        // 			}).then((role: RoleDocument) => {
+        // 				user.roles.push(role._id);
+        // 				return user.save();
+        // 			}).then((user: UserDocument) => {
+        // 				next();
+        // 			});
+        // 		}
+        // 	}).catch((err: any) => resp.sendStatus(500));
+        // });
         this.router.get('/user/me', this.getCurrentUser.bind(this));
         this.router.get('/user/:username', this.getUser.bind(this));
     }
@@ -31,9 +70,17 @@ class UserController extends authenticator_1.Authenticator {
     getCurrentUser(req, resp) {
         let userId = req.session.userId;
         if (userId) {
+            let userDoc;
             let query = this.model.findById.bind(this.model);
+            const roleModel = mongoose_1.model('Role', role_model_1.RoleSchema);
             promisify_1.promisify(query, userId)
-                .then((user) => this.sanitize(user))
+                .then((user) => {
+                userDoc = user;
+                return promisify_1.promisify(roleModel.find.bind(roleModel), {
+                    _id: user.roles
+                });
+            })
+                .then((roles) => this.sanitize(userDoc, roles))
                 .then((userData) => resp.json(userData))
                 .catch(this.error(resp));
         }
@@ -41,14 +88,16 @@ class UserController extends authenticator_1.Authenticator {
             resp.sendStatus(401);
         }
     }
-    sanitize(user) {
+    sanitize(user, roles) {
         if (!user)
             throw new Error('Not Found');
         let userData = {};
         user_model_1.UserSchema.eachPath((path, type) => {
-            if (path != 'passwordHash')
+            if (path != 'passwordHash' && path != 'roles')
                 userData[path] = user[path];
         });
+        if (roles != undefined)
+            userData['roles'] = roles;
         return userData;
     }
     error(resp) {

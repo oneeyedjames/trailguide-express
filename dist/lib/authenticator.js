@@ -10,10 +10,6 @@ class Authenticator {
             .post('/logout', this.logOut.bind(this))
             .post('/register', this.register.bind(this));
     }
-    isAuthenticated(req, res, next) {
-        // console.log(req.session.userId);
-        next();
-    }
     logIn(req, res) {
         this.findUser(req.body.username).then((user) => {
             if (user == null)

@@ -24,11 +24,6 @@ export abstract class Authenticator {
 	protected abstract findUser(username: string): Promise<UserData>;
 	protected abstract createUser(username: string, passwordHash: string): Promise<UserData>;
 
-	public isAuthenticated(req: Request, res: Response, next: NextFunction) {
-		// console.log(req.session.userId);
-		next();
-	}
-
 	private logIn(req: Request, res: Response) {
 		this.findUser(req.body.username).then((user: UserData) => {
 			if (user == null) throw new Error('Invalid Username');

@@ -10,6 +10,17 @@ class ArticleController extends resource_controller_1.ResourceController {
             return { chapter: chapter._id };
         });
     }
+    beforeCreate(doc) {
+        return super.beforeCreate(doc);
+    }
+    beforeUpdate(doc) {
+        doc = super.beforeUpdate(doc);
+        return doc;
+    }
+    afterUpdate(doc) {
+        doc = super.beforeUpdate(doc);
+        return doc;
+    }
 }
 exports.ArticleController = ArticleController;
 exports.default = new ArticleController();

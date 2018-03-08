@@ -11,14 +11,11 @@ import * as bodyParser   from 'body-parser';
 import * as cookieParser from 'cookie-parser';
 
 import UserController from './user.controller';
+import RoleController from './role.controller';
 
 import IssueController   from './issue.controller';
 import ChapterController from './chapter.controller';
 import ArticleController from './article.controller';
-
-import { model } from 'mongoose';
-import { promisify } from './lib/promisify';
-import { UserDocument, UserSchema } from './user.model';
 
 export class Application {
 	public application: express.Application;
@@ -38,14 +35,16 @@ export class Application {
 				})
 			}))
 			.use(this.enableCors)
-			.use('/api', UserController.router)
-			.use('/api', IssueController.router)
-			.use('/api', ChapterController.router)
-			.use('/api', ArticleController.router)
 			.use('/api/v1', UserController.router)
+			.use('/api/v1', RoleController.router)
 			.use('/api/v1', IssueController.router)
 			.use('/api/v1', ChapterController.router)
-			.use('/api/v1', ArticleController.router);
+			.use('/api/v1', ArticleController.router)
+			.use('/api', UserController.router)
+			.use('/api', RoleController.router)
+			.use('/api', IssueController.router)
+			.use('/api', ChapterController.router)
+			.use('/api', ArticleController.router);
 	}
 
 	public listen(port: number|string): Promise<Server> {

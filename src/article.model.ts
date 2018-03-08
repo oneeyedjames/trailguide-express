@@ -4,12 +4,26 @@ import { Resource, ResourceDocument, UserRef } from './resource.model';
 
 const ObjectId = Schema.Types.ObjectId;
 
+interface Question {
+	heading: string;
+	keyword: string;
+	message: string;
+}
+
+interface QuestionSet {
+	observation: Question;
+	interpretation: Question;
+	application: Question;
+	implementation: Question;
+}
+
 export interface Article extends Resource {
 	chapter: typeof ObjectId;
 	title: string;
 	bibleReading: string;
 	extraReading: string;
 	content: string;
+	questions?: QuestionSet;
 	publishedAt: Date;
 }
 
@@ -25,6 +39,7 @@ export let ArticleSchema = new Schema({
 	bibleReading: String,
 	extraReading: String,
 	content: String,
+	questions: Object,
 	publishedAt: Date,
 	createdBy: UserRef,
 	createdAt: Date,
