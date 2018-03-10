@@ -73,7 +73,12 @@ export class Controller<T extends Document> {
 					let fn = singular ? this.model.findOne : this.model.find;
 					return promisify<T|T[]>(fn.bind(this.model), resolve(doc));
 				})
-				.then((res: T|T[]) => resp.json(this.addLinks(res, req)))
+				.then((res: T|T[]) => {
+					if (singular && res == null)
+						throw new Error('Not Found');
+
+					resp.json(this.addLinks(res, req))
+				})
 				.catch(this.error(resp));
 			};
 

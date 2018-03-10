@@ -41,7 +41,11 @@ class Controller {
                     let fn = singular ? this.model.findOne : this.model.find;
                     return promisify_1.promisify(fn.bind(this.model), resolve(doc));
                 })
-                    .then((res) => resp.json(this.addLinks(res, req)))
+                    .then((res) => {
+                    if (singular && res == null)
+                        throw new Error('Not Found');
+                    resp.json(this.addLinks(res, req));
+                })
                     .catch(this.error(resp));
             };
             this.router.get(subPath, getCallback.bind(this));
@@ -133,19 +137,22 @@ class Controller {
         }
         else {
             const baseUrl = req.protocol + '://' + req.get('host') + req.baseUrl;
-            let obj = src.toObject();
+            let obj = src == null ? {} : src.toObject();
             obj['_links'] = [{
                     rel: 'collection',
                     href: baseUrl + this.basePath
-                }, {
+                }];
+            if (src != null) {
+                obj['_links'].push({
                     rel: 'self',
                     href: baseUrl + this.itemPath.replace(':id', src._id)
-                }];
-            for (let link of this.links) {
-                obj['_links'].push({
-                    rel: link.rel,
-                    href: baseUrl + link.path.replace(':id', src._id)
                 });
+                for (let link of this.links) {
+                    obj['_links'].push({
+                        rel: link.rel,
+                        href: baseUrl + link.path.replace(':id', src._id)
+                    });
+                }
             }
             return obj;
         }
