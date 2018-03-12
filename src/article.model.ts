@@ -1,4 +1,4 @@
-import { Schema } from 'mongoose';
+import { Schema, model } from 'mongoose';
 
 import { Resource, ResourceDocument, UserRef } from './resource.model';
 
@@ -29,7 +29,7 @@ export interface Article extends Resource {
 
 export interface ArticleDocument extends Article, ResourceDocument {}
 
-export let ArticleSchema = new Schema({
+export const ArticleSchema = new Schema({
 	chapter: {
 		type: ObjectId,
 		ref: 'Chapter',
@@ -46,3 +46,5 @@ export let ArticleSchema = new Schema({
 	modifiedBy: UserRef,
 	modifiedAt: Date
 });
+
+export const ArticleModel = model<ArticleDocument>('Article', ArticleSchema);

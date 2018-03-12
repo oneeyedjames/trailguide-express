@@ -1,7 +1,7 @@
-import * as supertest from 'supertest';
-
 import { describe, it, beforeEach, afterEach } from 'mocha';
+import { expect } from 'chai';
 
+import * as supertest from 'supertest';
 import * as dotenv from 'dotenv';
 
 dotenv.config();
@@ -9,21 +9,21 @@ dotenv.config();
 import { Application } from './app';
 
 describe('loading server', () => {
-	let app;
+	let app, request;
 
 	beforeEach(() => {
 		app = new Application();
 		app.listen(3000);
+
+		request = supertest(app.application);
 	});
 
 	afterEach((done) => {
-		app.close().then(() => done());
+		app.close().then(done);
 	});
 
 	it('should respond', (done) => {
-		supertest(app.application)
-		.get('/api/issues')
+		request.get('/api/v1')
 		.expect(200, done);
-		done();
 	});
 });

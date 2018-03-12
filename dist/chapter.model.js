@@ -18,3 +18,4 @@ exports.ChapterSchema = new mongoose_1.Schema({
     modifiedBy: resource_model_1.UserRef,
     modifiedAt: Date
 });
+exports.ChapterModel = mongoose_1.model('Chapter', exports.ChapterSchema);

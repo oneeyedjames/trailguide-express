@@ -18,3 +18,4 @@ exports.ReplySchema = new mongoose_1.Schema({
     modifiedBy: resource_model_1.UserRef,
     modifiedAt: Date
 });
+exports.ReplyModel = mongoose_1.model('Reply', exports.ReplySchema);

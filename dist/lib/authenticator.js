@@ -10,18 +10,28 @@ class Authenticator {
             .post('/logout', this.logOut.bind(this))
             .post('/register', this.register.bind(this));
     }
-    logIn(req, res) {
-        this.findUser(req.body.username).then((user) => {
+    authenticate(username, password) {
+        let userData;
+        return this.findUser(username)
+            .then((user) => {
             if (user == null)
                 throw new Error('Invalid Username');
-            bcrypt.compare(req.body.password, user.passwordHash)
-                .then((isMatch) => {
-                if (!isMatch)
-                    throw new Error('Invalid Password');
-                req.session.userId = user.id;
-                res.sendStatus(204);
-            });
-        }).catch((err) => {
+            userData = user;
+            return bcrypt.compare(password, user.passwordHash);
+        })
+            .then((isMatch) => {
+            if (!isMatch)
+                throw new Error('Invalid Password');
+            return userData;
+        });
+    }
+    logIn(req, res) {
+        this.authenticate(req.body.username, req.body.password)
+            .then((user) => {
+            req.session.userId = user.id;
+            res.sendStatus(204);
+        })
+            .catch((err) => {
             req.session.userId = null;
             res.status(500).json(err);
         });

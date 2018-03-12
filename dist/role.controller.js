@@ -4,7 +4,7 @@ const resource_controller_1 = require("./resource.controller");
 const role_model_1 = require("./role.model");
 class RoleController extends resource_controller_1.ResourceController {
     constructor() {
-        super('Role', role_model_1.RoleSchema);
+        super(role_model_1.RoleModel);
         this.setRoutes('/roles', '/role');
     }
 }

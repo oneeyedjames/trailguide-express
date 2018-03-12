@@ -1,12 +1,11 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
-const mongoose_1 = require("mongoose");
 const promisify_1 = require("./promisify");
 class Controller {
-    constructor(name, schema) {
-        Controller.controllers[name] = this;
-        this.model = mongoose_1.model(name, schema);
+    constructor(model) {
+        this.model = model;
+        Controller.controllers[model.modelName] = this;
         this.router = express_1.Router();
         this.links = new Array();
     }
@@ -15,8 +14,8 @@ class Controller {
         this.itemPath = `${itemPath || basePath}/:id`;
         this.router
             .get(this.basePath, this.getAll.bind(this))
-            .post(this.basePath, this.create.bind(this))
             .get(this.itemPath, this.getOne.bind(this))
+            .post(this.basePath, this.create.bind(this))
             .put(this.itemPath, this.update.bind(this))
             .delete(this.itemPath, this.delete.bind(this));
         const name = this.model.modelName;
@@ -44,16 +43,19 @@ class Controller {
                     .then((res) => {
                     if (singular && res == null)
                         throw new Error('Not Found');
-                    resp.json(this.addLinks(res, req));
+                    return this.addLinks(res, req);
                 })
+                    .then((res) => resp.json(res))
                     .catch(this.error(resp));
             };
             this.router.get(subPath, getCallback.bind(this));
             if (!singular) {
                 const postCallback = (req, resp) => {
                     promisify_1.promisify(that.model.findById.bind(that.model), req.params.id)
-                        .then((doc) => this.model.create(this.merge(req.body, resolve(doc))))
-                        .then((doc) => resp.status(201).json(this.addLinks(doc, req)))
+                        .then((doc) => this.merge(req.body, resolve(doc)))
+                        .then((doc) => this.model.create(doc))
+                        .then((doc) => this.addLinks(doc, req))
+                        .then((doc) => resp.status(201).json(doc))
                         .catch(this.error(resp));
                 };
                 this.router.post(subPath, postCallback.bind(this));

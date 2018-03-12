@@ -1,4 +1,4 @@
-import { Document, Schema, HookNextFunction } from 'mongoose';
+import { Document, Schema, HookNextFunction, model } from 'mongoose';
 
 import { Role } from './role.model';
 
@@ -31,3 +31,5 @@ export const UserSchema = new Schema({
 
 	next();
 });
+
+export const UserModel = model<UserDocument>('User', UserSchema);

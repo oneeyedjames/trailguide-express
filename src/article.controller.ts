@@ -1,11 +1,11 @@
 import { ResourceController } from './resource.controller';
 
-import { ChapterDocument }				from './chapter.model';
-import { ArticleDocument, ArticleSchema } from './article.model';
+import { ChapterDocument }				 from './chapter.model';
+import { ArticleModel, ArticleDocument } from './article.model';
 
 export class ArticleController extends ResourceController<ArticleDocument> {
 	constructor() {
-		super('Article', ArticleSchema);
+		super(ArticleModel);
 
 		this.setRoutes('/articles', '/article');
 

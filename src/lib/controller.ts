@@ -1,5 +1,5 @@
 import { Router, Request, Response, NextFunction }	from 'express';
-import { Document, Schema, SchemaType, Model, model } from 'mongoose';
+import { Model, Document, Schema, SchemaType } from 'mongoose';
 
 import { promisify } from './promisify';
 
@@ -12,7 +12,6 @@ export class Controller<T extends Document> {
 	private static controllers = {};
 	private static subRouteQueue = {};
 
-	public model: Model<T>;
 	public router: Router;
 
 	private basePath: string;
@@ -20,12 +19,10 @@ export class Controller<T extends Document> {
 
 	private links: Link[];
 
-	constructor(name: string, schema: Schema) {
-		Controller.controllers[name] = this;
+	constructor(public model: Model<T>) {
+		Controller.controllers[model.modelName] = this;
 
-		this.model = model<T>(name, schema);
 		this.router = Router();
-
 		this.links = new Array<Link>();
 	}
 
@@ -34,11 +31,11 @@ export class Controller<T extends Document> {
 		this.itemPath = `${itemPath || basePath}/:id`;
 
 		this.router
-			.get(this.basePath, this.getAll.bind(this))
-			.post(this.basePath, this.create.bind(this))
-			.get(this.itemPath, this.getOne.bind(this))
-			.put(this.itemPath, this.update.bind(this))
-			.delete(this.itemPath, this.delete.bind(this));
+		.get(this.basePath, this.getAll.bind(this))
+		.get(this.itemPath, this.getOne.bind(this))
+		.post(this.basePath, this.create.bind(this))
+		.put(this.itemPath, this.update.bind(this))
+		.delete(this.itemPath, this.delete.bind(this));
 
 		const name = this.model.modelName;
 
@@ -77,8 +74,9 @@ export class Controller<T extends Document> {
 					if (singular && res == null)
 						throw new Error('Not Found');
 
-					resp.json(this.addLinks(res, req))
+					return this.addLinks(res, req);
 				})
+				.then((res: T|T[]) => resp.json(res))
 				.catch(this.error(resp));
 			};
 
@@ -87,8 +85,10 @@ export class Controller<T extends Document> {
 			if (!singular) {
 				const postCallback = (req: Request, resp: Response) => {
 					promisify<TParent>(that.model.findById.bind(that.model), req.params.id)
-					.then((doc: TParent) => this.model.create(this.merge(req.body, resolve(doc))))
-					.then((doc: T) => resp.status(201).json(this.addLinks(doc, req)))
+					.then((doc: TParent) => this.merge(req.body, resolve(doc)))
+					.then((doc: T) => this.model.create(doc))
+					.then((doc: T) => this.addLinks(doc, req))
+					.then((doc: T) => resp.status(201).json(doc))
 					.catch(this.error(resp));
 				};
 

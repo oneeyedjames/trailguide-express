@@ -29,18 +29,21 @@ class Application {
             })
         }))
             .use(this.enableCors)
-            .use('/api/v1', user_controller_1.default.router)
-            .use('/api/v1', role_controller_1.default.router)
-            .use('/api/v1', issue_controller_1.default.router)
-            .use('/api/v1', chapter_controller_1.default.router)
-            .use('/api/v1', article_controller_1.default.router)
-            .use('/api/v1', reply_controller_1.default.router)
-            .use('/api', user_controller_1.default.router)
-            .use('/api', role_controller_1.default.router)
-            .use('/api', issue_controller_1.default.router)
-            .use('/api', chapter_controller_1.default.router)
-            .use('/api', article_controller_1.default.router)
-            .use('/api', reply_controller_1.default.router);
+            .get('/api/v1', (req, resp) => resp.sendStatus(200))
+            .get('/api', (req, resp) => resp.sendStatus(200));
+        let controllers = [
+            user_controller_1.default,
+            role_controller_1.default,
+            issue_controller_1.default,
+            chapter_controller_1.default,
+            article_controller_1.default,
+            reply_controller_1.default
+        ];
+        for (let controller of controllers) {
+            this.application
+                .use('/api/v1', controller.router)
+                .use('/api', controller.router);
+        }
     }
     listen(port) {
         port = this.normalizePort(port) || 3000;

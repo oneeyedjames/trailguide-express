@@ -20,3 +20,4 @@ exports.ArticleSchema = new mongoose_1.Schema({
     modifiedBy: resource_model_1.UserRef,
     modifiedAt: Date
 });
+exports.ArticleModel = mongoose_1.model('Article', exports.ArticleSchema);

@@ -4,7 +4,7 @@
 	"description": "",
 	"main": "index.js",
 	"scripts": {
-		"test": "mocha -r ts-node/register src/**/*.spec.ts",
+		"test": "mocha -r ts-node/register 'src/**/*.spec.ts'",
 		"start": "concurrently 'tsc -w' 'nodemon dist'",
 		"prestart": "mongod --dbpath data --fork --logpath /dev/null",
 		"stop": "echo 'Stopping...'",

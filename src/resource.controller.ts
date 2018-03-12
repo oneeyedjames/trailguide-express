@@ -5,13 +5,10 @@ import { Controller } from './lib/controller';
 import { promisify } from './lib/promisify';
 
 import { ResourceDocument } from './resource.model'
-import { UserDocument, UserSchema } from './user.model';
-import { RoleDocument, RoleSchema } from './role.model';
+import { UserDocument, UserModel } from './user.model';
+import { RoleDocument, RoleModel } from './role.model';
 
 export class ResourceController<T extends ResourceDocument> extends Controller<T> {
-	private userModel: Model<UserDocument>;
-	private roleModel: Model<RoleDocument>;
-
 	private _user: UserDocument;
 	private _roles: RoleDocument[];
 
@@ -23,13 +20,10 @@ export class ResourceController<T extends ResourceDocument> extends Controller<T
 
 	get isAuthenticated(): boolean { return this._user != null; }
 
-	constructor(name: string, schema: Schema) {
-		super(name, schema);
+	constructor(resModel: Model<T>) {
+		super(resModel);
 
-		this.resourceType = name.toLowerCase();
-
-		this.userModel = model<UserDocument>('User', UserSchema);
-		this.roleModel = model<RoleDocument>('Role', RoleSchema);
+		this.resourceType = resModel.modelName.toLowerCase();
 
 		this.router.use(this.getUser());
 	}
@@ -107,8 +101,9 @@ export class ResourceController<T extends ResourceDocument> extends Controller<T
 	}
 
 	private getUser(): RequestHandler {
-		const userQuery = this.userModel.findById.bind(this.userModel);
-		const roleQuery = this.roleModel.find.bind(this.roleModel);
+		const userQuery = UserModel.findById.bind(UserModel);
+		const roleQuery = RoleModel.find.bind(RoleModel);
+
 		return (req: Request, res: Response, next: NextFunction) => {
 			// Required for preflight in CORS requests
 			if (req.method == 'OPTIONS')

@@ -1,4 +1,4 @@
-import { Schema } from 'mongoose';
+import { Schema, model } from 'mongoose';
 
 import { Resource, ResourceDocument, UserRef } from './resource.model';
 
@@ -29,3 +29,5 @@ export const ReplySchema = new Schema({
 	modifiedBy: UserRef,
 	modifiedAt: Date
 });
+
+export const ReplyModel = model<ReplyDocument>('Reply', ReplySchema);

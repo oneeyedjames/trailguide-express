@@ -30,31 +30,36 @@ export class Application {
 
 	constructor() {
 		this.application = express()
-			.use(bodyParser.json())
-			.use(bodyParser.urlencoded({ extended: false }))
-			.use(cookieParser())
-			.use(session({
-				secret: process.env.COOKIE_SECRET,
-				resave: false,
-				saveUninitialized: false,
-				store: new MongoStore({
-					mongooseConnection: mongoose.connection,
-					autoRemove: 'native'
-				})
-			}))
-			.use(this.enableCors)
-			.use('/api/v1', UserController.router)
-			.use('/api/v1', RoleController.router)
-			.use('/api/v1', IssueController.router)
-			.use('/api/v1', ChapterController.router)
-			.use('/api/v1', ArticleController.router)
-			.use('/api/v1', ReplyController.router)
-			.use('/api', UserController.router)
-			.use('/api', RoleController.router)
-			.use('/api', IssueController.router)
-			.use('/api', ChapterController.router)
-			.use('/api', ArticleController.router)
-			.use('/api', ReplyController.router);
+		.use(bodyParser.json())
+		.use(bodyParser.urlencoded({ extended: false }))
+		.use(cookieParser())
+		.use(session({
+			secret: process.env.COOKIE_SECRET,
+			resave: false,
+			saveUninitialized: false,
+			store: new MongoStore({
+				mongooseConnection: mongoose.connection,
+				autoRemove: 'native'
+			})
+		}))
+		.use(this.enableCors)
+		.get('/api/v1', (req, resp) => resp.sendStatus(200))
+		.get('/api', (req, resp) => resp.sendStatus(200));
+
+		let controllers = [
+			UserController,
+			RoleController,
+			IssueController,
+			ChapterController,
+			ArticleController,
+			ReplyController
+		];
+
+		for (let controller of controllers) {
+			this.application
+			.use('/api/v1', controller.router)
+			.use('/api', controller.router);
+		}
 	}
 
 	public listen(port: number|string): Promise<Address> {

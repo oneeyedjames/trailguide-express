@@ -1,16 +1,13 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const mongoose_1 = require("mongoose");
 const controller_1 = require("./lib/controller");
 const promisify_1 = require("./lib/promisify");
 const user_model_1 = require("./user.model");
 const role_model_1 = require("./role.model");
 class ResourceController extends controller_1.Controller {
-    constructor(name, schema) {
-        super(name, schema);
-        this.resourceType = name.toLowerCase();
-        this.userModel = mongoose_1.model('User', user_model_1.UserSchema);
-        this.roleModel = mongoose_1.model('Role', role_model_1.RoleSchema);
+    constructor(resModel) {
+        super(resModel);
+        this.resourceType = resModel.modelName.toLowerCase();
         this.router.use(this.getUser());
     }
     get user() { return this._user; }
@@ -70,8 +67,8 @@ class ResourceController extends controller_1.Controller {
         return doc;
     }
     getUser() {
-        const userQuery = this.userModel.findById.bind(this.userModel);
-        const roleQuery = this.roleModel.find.bind(this.roleModel);
+        const userQuery = user_model_1.UserModel.findById.bind(user_model_1.UserModel);
+        const roleQuery = role_model_1.RoleModel.find.bind(role_model_1.RoleModel);
         return (req, res, next) => {
             // Required for preflight in CORS requests
             if (req.method == 'OPTIONS')

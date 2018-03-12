@@ -1,11 +1,11 @@
 import { ResourceController } from './resource.controller';
 
-import { ReplyDocument, ReplySchema } from './reply.model';
-import { ArticleDocument } from './article.model';
+import { ArticleDocument }           from './article.model';
+import { ReplyModel, ReplyDocument } from './reply.model';
 
 export class ReplyController extends ResourceController<ReplyDocument> {
 	constructor() {
-		super('Reply', ReplySchema);
+		super(ReplyModel);
 
 		this.setRoutes('/replies', '/reply');
 

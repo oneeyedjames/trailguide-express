@@ -24,16 +24,28 @@ export abstract class Authenticator {
 	protected abstract findUser(username: string): Promise<UserData>;
 	protected abstract createUser(username: string, passwordHash: string): Promise<UserData>;
 
-	private logIn(req: Request, res: Response) {
-		this.findUser(req.body.username).then((user: UserData) => {
+	public authenticate(username: string, password: string): Promise<UserData> {
+		let userData: UserData;
+
+		return this.findUser(username)
+		.then((user: UserData) => {
 			if (user == null) throw new Error('Invalid Username');
-			bcrypt.compare(req.body.password, user.passwordHash)
-			.then((isMatch: boolean) => {
-				if (!isMatch) throw new Error('Invalid Password');
-				req.session.userId = user.id;
-				res.sendStatus(204);
-			});
-		}).catch((err: any) => {
+			userData = user;
+			return bcrypt.compare(password, user.passwordHash);
+		})
+		.then((isMatch: boolean) => {
+			if (!isMatch) throw new Error('Invalid Password');
+			return userData;
+		});
+	}
+
+	private logIn(req: Request, res: Response) {
+		this.authenticate(req.body.username, req.body.password)
+		.then((user: UserData) => {
+			req.session.userId = user.id;
+			res.sendStatus(204);
+		})
+		.catch((err: any) => {
 			req.session.userId = null;
 			res.status(500).json(err);
 		});

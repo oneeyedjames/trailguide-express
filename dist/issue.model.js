@@ -13,3 +13,4 @@ exports.IssueSchema = new mongoose_1.Schema({
     modifiedBy: resource_model_1.UserRef,
     modifiedAt: Date
 });
+exports.IssueModel = mongoose_1.model('Issue', exports.IssueSchema);

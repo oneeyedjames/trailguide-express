@@ -17,3 +17,4 @@ exports.UserSchema = new mongoose_1.Schema({
         this.createdAt = this.modifiedAt;
     next();
 });
+exports.UserModel = mongoose_1.model('User', exports.UserSchema);
