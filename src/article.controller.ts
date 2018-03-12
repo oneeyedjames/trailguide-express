@@ -13,22 +13,6 @@ export class ArticleController extends ResourceController<ArticleDocument> {
 			return { chapter: chapter._id };
 		});
 	}
-
-	protected beforeCreate(doc: ArticleDocument): ArticleDocument {
-		return super.beforeCreate(doc);
-	}
-
-	protected beforeUpdate(doc: ArticleDocument): ArticleDocument {
-		doc = super.beforeUpdate(doc);
-
-		return doc;
-	}
-
-	protected afterUpdate(doc: ArticleDocument): ArticleDocument {
-		doc = super.beforeUpdate(doc);
-
-		return doc;
-	}
 }
 
 export default new ArticleController();
