@@ -18,8 +18,15 @@ import ChapterController from './chapter.controller';
 import ArticleController from './article.controller';
 import ReplyController   from './reply.controller';
 
+export interface Address {
+	port: number;
+	family: string;
+	address: string;
+}
+
 export class Application {
 	public application: express.Application;
+	public server: Server;
 
 	constructor() {
 		this.application = express()
@@ -50,15 +57,29 @@ export class Application {
 			.use('/api', ReplyController.router);
 	}
 
-	public listen(port: number|string): Promise<Server> {
+	public listen(port: number|string): Promise<Address> {
 		port = this.normalizePort(port) || 3000;
 
 		this.application.set('port', port);
 
-		return new Promise<Server>((resolve, reject) => {
-			const server = this.application.listen(port, () => resolve(server))
+		return new Promise<Address>((resolve, reject) => {
+			this.server = this.application
+			.listen(port, () => resolve(this.server.address()))
 			.on('error', (error: Error) => reject(error));
 		});
+	}
+
+	public close(): Promise<any> {
+		if (this.server) {
+			return new Promise<any>((resolve, reject) => {
+				this.server.close(() => {
+					this.server = null;
+					resolve();
+				});
+			});
+		} else {
+			return Promise.reject(new Error('Server is already closed.'));
+		}
 	}
 
 	private normalizePort(val: number|string): number|string {

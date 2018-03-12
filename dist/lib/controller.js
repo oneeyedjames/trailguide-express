@@ -137,22 +137,19 @@ class Controller {
         }
         else {
             const baseUrl = req.protocol + '://' + req.get('host') + req.baseUrl;
-            let obj = src == null ? {} : src.toObject();
+            let obj = src.toObject();
             obj['_links'] = [{
                     rel: 'collection',
                     href: baseUrl + this.basePath
-                }];
-            if (src != null) {
-                obj['_links'].push({
+                }, {
                     rel: 'self',
                     href: baseUrl + this.itemPath.replace(':id', src._id)
+                }];
+            for (let link of this.links) {
+                obj['_links'].push({
+                    rel: link.rel,
+                    href: baseUrl + link.path.replace(':id', src._id)
                 });
-                for (let link of this.links) {
-                    obj['_links'].push({
-                        rel: link.rel,
-                        href: baseUrl + link.path.replace(':id', src._id)
-                    });
-                }
             }
             return obj;
         }
