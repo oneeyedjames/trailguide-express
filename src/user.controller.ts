@@ -20,7 +20,7 @@ class UserController extends Authenticator {
 		// this.router.use((req, resp, next) => {
 		// 	this.findUser('admin').then((user: UserDocument) => {
 		// 		console.log(user);
-        //
+		//
 		// 		if (user.roles.length == 0) {
 		// 			promisify<RoleDocument>(roleModel.findOne.bind(roleModel), {
 		// 				title: 'Administrator'
