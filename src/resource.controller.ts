@@ -60,6 +60,8 @@ export class ResourceController<T extends ResourceDocument> extends Controller<T
 	protected canEdit(doc?: T): boolean {
 		if (!this.isAuthenticated)
 			return false;
+		else if (this.user.admin)
+			return true;
 
 		if (doc == undefined)
 			return this.hasPermission('create', this.resourceType);
@@ -73,6 +75,8 @@ export class ResourceController<T extends ResourceDocument> extends Controller<T
 	protected canDelete(doc: T): boolean {
 		if (!this.isAuthenticated)
 			return false;
+		else if (this.user.admin)
+			return true;
 
 		if (doc.createdBy == this.user.id || doc.createdBy == null)
 			return this.hasPermission('delete', this.resourceType);
@@ -104,21 +108,22 @@ export class ResourceController<T extends ResourceDocument> extends Controller<T
 		const userQuery = UserModel.findById.bind(UserModel);
 		const roleQuery = RoleModel.find.bind(RoleModel);
 
-		return (req: Request, res: Response, next: NextFunction) => {
+		return (req: Request, resp: Response, next: NextFunction) => {
 			// Required for preflight in CORS requests
 			if (req.method == 'OPTIONS')
-				return res.sendStatus(200);
+				return resp.sendStatus(200);
 
-			promisify<UserDocument>(userQuery, req.session.userId)
-			.then((user: UserDocument) => {
-				this._user = user;
-				return promisify<RoleDocument[]>(roleQuery, { _id: user.roles })
-			})
-			.then((roles: RoleDocument[]) => {
-				this._roles = roles;
-				next();
-			})
-			.catch((err: any) => res.sendStatus(500));
+			let userId = req.session.userId;
+			if (userId) {
+				promisify<UserDocument>(userQuery, req.session.userId)
+				.then((user: UserDocument) => this._user = user)
+				.then((user: UserDocument) => promisify<RoleDocument[]>(roleQuery, { _id: user.roles }))
+				.then((roles: RoleDocument[]) => this._roles = roles)
+				.then((roles: RoleDocument[]) => next())
+				.catch((err: any) => resp.sendStatus(500));
+			} else {
+				resp.sendStatus(401);
+			}
 		};
 	}
 }

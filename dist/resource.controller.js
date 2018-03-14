@@ -39,6 +39,8 @@ class ResourceController extends controller_1.Controller {
     canEdit(doc) {
         if (!this.isAuthenticated)
             return false;
+        else if (this.user.admin)
+            return true;
         if (doc == undefined)
             return this.hasPermission('create', this.resourceType);
         if (doc.createdBy == this.user.id || doc.createdBy == null)
@@ -48,6 +50,8 @@ class ResourceController extends controller_1.Controller {
     canDelete(doc) {
         if (!this.isAuthenticated)
             return false;
+        else if (this.user.admin)
+            return true;
         if (doc.createdBy == this.user.id || doc.createdBy == null)
             return this.hasPermission('delete', this.resourceType);
         return this.hasOverridePermission('delete', this.resourceType);
@@ -69,20 +73,22 @@ class ResourceController extends controller_1.Controller {
     getUser() {
         const userQuery = user_model_1.UserModel.findById.bind(user_model_1.UserModel);
         const roleQuery = role_model_1.RoleModel.find.bind(role_model_1.RoleModel);
-        return (req, res, next) => {
+        return (req, resp, next) => {
             // Required for preflight in CORS requests
             if (req.method == 'OPTIONS')
-                return res.sendStatus(200);
-            promisify_1.promisify(userQuery, req.session.userId)
-                .then((user) => {
-                this._user = user;
-                return promisify_1.promisify(roleQuery, { _id: user.roles });
-            })
-                .then((roles) => {
-                this._roles = roles;
-                next();
-            })
-                .catch((err) => res.sendStatus(500));
+                return resp.sendStatus(200);
+            let userId = req.session.userId;
+            if (userId) {
+                promisify_1.promisify(userQuery, req.session.userId)
+                    .then((user) => this._user = user)
+                    .then((user) => promisify_1.promisify(roleQuery, { _id: user.roles }))
+                    .then((roles) => this._roles = roles)
+                    .then((roles) => next())
+                    .catch((err) => resp.sendStatus(500));
+            }
+            else {
+                resp.sendStatus(401);
+            }
         };
     }
 }

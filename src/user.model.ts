@@ -8,6 +8,7 @@ export interface User {
 	username: string;
 	passwordHash: string;
 	roles: typeof ObjectId[];
+	admin: boolean;
 	createdAt: Date;
 	modifiedAt: Date;
 }
@@ -21,6 +22,7 @@ export const UserSchema = new Schema({
 		type: ObjectId,
 		ref: 'Role'
 	}],
+	admin: Boolean,
 	createdAt: Date,
 	modifiedAt: Date
 }).pre('save', (next: HookNextFunction) => {

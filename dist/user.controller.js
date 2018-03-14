@@ -13,8 +13,14 @@ class UserController extends authenticator_1.Authenticator {
         //
         // this.router.use((req, resp, next) => {
         // 	this.findUser('admin').then((user: UserDocument) => {
+        // 		if (!user.admin) {
+        // 			user.admin = true;
+        // 			return user.save();
+        // 		} else {
+        // 			return user;
+        // 		}
+        // 	}).then((user: UserDocument) => {
         // 		console.log(user);
-        //
         // 		if (user.roles.length == 0) {
         // 			promisify<RoleDocument>(roleModel.findOne.bind(roleModel), {
         // 				title: 'Administrator'
@@ -71,15 +77,12 @@ class UserController extends authenticator_1.Authenticator {
         let userId = req.session.userId;
         if (userId) {
             let userDoc;
-            let query = this.model.findById.bind(this.model);
             const roleModel = mongoose_1.model('Role', role_model_1.RoleSchema);
-            promisify_1.promisify(query, userId)
-                .then((user) => {
-                userDoc = user;
-                return promisify_1.promisify(roleModel.find.bind(roleModel), {
-                    _id: user.roles
-                });
-            })
+            let userQuery = this.model.findById.bind(this.model);
+            let roleQuery = roleModel.find.bind(roleModel);
+            promisify_1.promisify(userQuery, userId)
+                .then((user) => userDoc = user)
+                .then((user) => promisify_1.promisify(roleQuery, { _id: user.roles }))
                 .then((roles) => this.sanitize(userDoc, roles))
                 .then((userData) => resp.json(userData))
                 .catch(this.error(resp));
@@ -93,7 +96,7 @@ class UserController extends authenticator_1.Authenticator {
             throw new Error('Not Found');
         let userData = {};
         user_model_1.UserSchema.eachPath((path, type) => {
-            if (path != 'passwordHash' && path != 'roles')
+            if (UserController.protectedFields.indexOf(path) < 0)
                 userData[path] = user[path];
         });
         if (roles != undefined)
@@ -116,4 +119,5 @@ class UserController extends authenticator_1.Authenticator {
         };
     }
 }
+UserController.protectedFields = ['passwordHash', 'roles', 'admin'];
 exports.default = new UserController();

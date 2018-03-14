@@ -8,6 +8,8 @@ import { UserDocument, UserSchema } from './user.model';
 import { RoleDocument, RoleSchema } from './role.model';
 
 class UserController extends Authenticator {
+	private static protectedFields = ['passwordHash', 'roles', 'admin'];
+
 	private model: Model<UserDocument>;
 
 	constructor() {
@@ -16,11 +18,17 @@ class UserController extends Authenticator {
 		this.model = model<UserDocument>('User', UserSchema);
 
 		// const roleModel = model<RoleDocument>('Role', RoleSchema);
-		//
+        //
 		// this.router.use((req, resp, next) => {
 		// 	this.findUser('admin').then((user: UserDocument) => {
+		// 		if (!user.admin) {
+		// 			user.admin = true;
+		// 			return user.save();
+		// 		} else {
+		// 			return user;
+		// 		}
+		// 	}).then((user: UserDocument) => {
 		// 		console.log(user);
-		//
 		// 		if (user.roles.length == 0) {
 		// 			promisify<RoleDocument>(roleModel.findOne.bind(roleModel), {
 		// 				title: 'Administrator'
@@ -83,18 +91,14 @@ class UserController extends Authenticator {
 		if (userId) {
 			let userDoc: UserDocument;
 
-			let query = this.model.findById.bind(this.model);
-
 			const roleModel = model<RoleDocument>('Role', RoleSchema);
 
-			promisify<UserDocument>(query, userId)
-			.then((user: UserDocument) => {
-				userDoc = user;
+			let userQuery = this.model.findById.bind(this.model);
+			let roleQuery = roleModel.find.bind(roleModel);
 
-				return promisify<RoleDocument[]>(roleModel.find.bind(roleModel), {
-					_id: user.roles
-				});
-			})
+			promisify<UserDocument>(userQuery, userId)
+			.then((user: UserDocument) => userDoc = user)
+			.then((user: UserDocument) => promisify<RoleDocument[]>(roleQuery, { _id: user.roles }))
 			.then((roles: RoleDocument[]) => this.sanitize(userDoc, roles))
 			.then((userData: object) => resp.json(userData))
 			.catch(this.error(resp));
@@ -110,7 +114,7 @@ class UserController extends Authenticator {
 		let userData = {};
 
 		UserSchema.eachPath((path, type) => {
-			if (path != 'passwordHash' && path != 'roles')
+			if (UserController.protectedFields.indexOf(path) < 0)
 				userData[path] = user[path];
 		});
 

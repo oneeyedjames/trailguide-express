@@ -9,6 +9,7 @@ exports.UserSchema = new mongoose_1.Schema({
             type: ObjectId,
             ref: 'Role'
         }],
+    admin: Boolean,
     createdAt: Date,
     modifiedAt: Date
 }).pre('save', (next) => {
