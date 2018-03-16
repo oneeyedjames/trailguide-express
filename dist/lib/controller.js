@@ -75,6 +75,7 @@ class Controller {
     canRead(doc) { return true; }
     canEdit(doc) { return true; }
     canDelete(doc) { return true; }
+    searchArgs(args) { return args; }
     beforeCreate(doc) { return doc; }
     afterCreate(doc) { return doc; }
     beforeUpdate(doc) { return doc; }
@@ -83,7 +84,7 @@ class Controller {
     afterDelete(doc) { return doc; }
     getAll(req, resp) {
         if (this.canRead()) {
-            promisify_1.promisify(this.model.find.bind(this.model))
+            promisify_1.promisify(this.model.find.bind(this.model), this.searchArgs({}))
                 .then((res) => resp.json(this.addLinks(res, req)))
                 .catch(this.error(resp));
         }

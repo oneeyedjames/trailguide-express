@@ -111,6 +111,8 @@ export class Controller<T extends Document> {
 	protected canEdit(doc?: T): boolean { return true; }
 	protected canDelete(doc: T): boolean { return true; }
 
+	protected searchArgs(args: object): object { return args; }
+
 	protected beforeCreate(doc: T): T { return doc; }
 	protected afterCreate(doc: T): T { return doc; }
 	protected beforeUpdate(doc: T): T { return doc; }
@@ -120,7 +122,7 @@ export class Controller<T extends Document> {
 
 	private getAll(req: Request, resp: Response) {
 		if (this.canRead()) {
-			promisify<T[]>(this.model.find.bind(this.model))
+			promisify<T[]>(this.model.find.bind(this.model), this.searchArgs({}))
 			.then((res: T[]) => resp.json(this.addLinks(res, req)))
 			.catch(this.error(resp));
 		} else {

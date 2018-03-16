@@ -10,6 +10,19 @@ class ReplyController extends resource_controller_1.ResourceController {
             return { article: article.id, createdBy: this.user.id };
         }, true);
     }
+    searchArgs(args) {
+        args = super.searchArgs(args);
+        if (!this.isAdministrator)
+            args['createdBy'] = this.user.id.substring(1) + 'f';
+        return args;
+    }
+    canRead(doc) {
+        if (!this.isAuthenticated)
+            return false;
+        else if (doc == undefined)
+            return true;
+        return doc.createdBy.toString() == this.user.id.substring(1) + 'f';
+    }
 }
 exports.ReplyController = ReplyController;
 exports.default = new ReplyController();

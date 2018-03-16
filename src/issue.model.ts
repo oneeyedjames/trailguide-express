@@ -8,6 +8,7 @@ export interface Issue extends Resource {
 	volumeNumber: number;
 	issueNumber: number;
 	publishedAt: Date;
+	isFree: boolean;
 }
 
 export interface IssueDocument extends Issue, ResourceDocument {}

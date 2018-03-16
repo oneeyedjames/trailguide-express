@@ -20,6 +20,8 @@ export class ResourceController<T extends ResourceDocument> extends Controller<T
 
 	get isAuthenticated(): boolean { return this._user != null; }
 
+	get isAdministrator(): boolean { return this.isAuthenticated && this.user.admin; }
+
 	constructor(resModel: Model<T>) {
 		super(resModel);
 
@@ -50,17 +52,10 @@ export class ResourceController<T extends ResourceDocument> extends Controller<T
 		return false;
 	}
 
-	protected canRead(doc?: T): boolean {
-		if (doc == undefined)
-			return true;
-
-		return true;
-	}
-
 	protected canEdit(doc?: T): boolean {
 		if (!this.isAuthenticated)
 			return false;
-		else if (this.user.admin)
+		else if (this.isAdministrator)
 			return true;
 
 		if (doc == undefined)
@@ -75,7 +70,7 @@ export class ResourceController<T extends ResourceDocument> extends Controller<T
 	protected canDelete(doc: T): boolean {
 		if (!this.isAuthenticated)
 			return false;
-		else if (this.user.admin)
+		else if (this.isAdministrator)
 			return true;
 
 		if (doc.createdBy == this.user.id || doc.createdBy == null)

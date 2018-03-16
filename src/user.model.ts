@@ -1,13 +1,13 @@
-import { Document, Schema, HookNextFunction, model } from 'mongoose';
+import { Document, Schema, Types, HookNextFunction, model } from 'mongoose';
 
 import { Role } from './role.model';
 
-const ObjectId = Schema.Types.ObjectId;
+import ObjectId = Schema.Types.ObjectId;
 
 export interface User {
 	username: string;
 	passwordHash: string;
-	roles: typeof ObjectId[];
+	roles: Types.Array<ObjectId>;
 	admin: boolean;
 	createdAt: Date;
 	modifiedAt: Date;

@@ -13,6 +13,7 @@ class ResourceController extends controller_1.Controller {
     get user() { return this._user; }
     get roles() { return this._roles; }
     get isAuthenticated() { return this._user != null; }
+    get isAdministrator() { return this.isAuthenticated && this.user.admin; }
     hasPermission(action, resource) {
         for (let role of this.roles) {
             for (let perm of role.permissions) {
@@ -31,15 +32,10 @@ class ResourceController extends controller_1.Controller {
         }
         return false;
     }
-    canRead(doc) {
-        if (doc == undefined)
-            return true;
-        return true;
-    }
     canEdit(doc) {
         if (!this.isAuthenticated)
             return false;
-        else if (this.user.admin)
+        else if (this.isAdministrator)
             return true;
         if (doc == undefined)
             return this.hasPermission('create', this.resourceType);
@@ -50,7 +46,7 @@ class ResourceController extends controller_1.Controller {
     canDelete(doc) {
         if (!this.isAuthenticated)
             return false;
-        else if (this.user.admin)
+        else if (this.isAdministrator)
             return true;
         if (doc.createdBy == this.user.id || doc.createdBy == null)
             return this.hasPermission('delete', this.resourceType);
