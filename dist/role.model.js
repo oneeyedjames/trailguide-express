@@ -11,3 +11,4 @@ exports.RoleSchema = new mongoose_1.Schema({
     modifiedBy: resource_model_1.UserRef,
     modifiedAt: Date
 });
+exports.RoleModel = mongoose_1.model('Role', exports.RoleSchema);

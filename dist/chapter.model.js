@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = require("mongoose");
 const resource_model_1 = require("./resource.model");
-const ObjectId = mongoose_1.Schema.Types.ObjectId;
+var ObjectId = mongoose_1.Schema.Types.ObjectId;
 exports.ChapterSchema = new mongoose_1.Schema({
     issue: {
         type: ObjectId,
@@ -18,3 +18,4 @@ exports.ChapterSchema = new mongoose_1.Schema({
     modifiedBy: resource_model_1.UserRef,
     modifiedAt: Date
 });
+exports.ChapterModel = mongoose_1.model('Chapter', exports.ChapterSchema);

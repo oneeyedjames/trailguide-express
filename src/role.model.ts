@@ -1,4 +1,4 @@
-import { Document, Schema, HookNextFunction } from 'mongoose';
+import { Schema, model } from 'mongoose';
 
 import { Resource, ResourceDocument, UserRef } from './resource.model';
 
@@ -23,3 +23,5 @@ export const RoleSchema = new Schema({
 	modifiedBy: UserRef,
 	modifiedAt: Date
 });
+
+export const RoleModel = model<RoleDocument>('Role', RoleSchema);

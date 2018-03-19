@@ -1,21 +1,19 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const mongoose_1 = require("mongoose");
 const controller_1 = require("./lib/controller");
 const promisify_1 = require("./lib/promisify");
 const user_model_1 = require("./user.model");
 const role_model_1 = require("./role.model");
 class ResourceController extends controller_1.Controller {
-    constructor(name, schema) {
-        super(name, schema);
-        this.resourceType = name.toLowerCase();
-        this.userModel = mongoose_1.model('User', user_model_1.UserSchema);
-        this.roleModel = mongoose_1.model('Role', role_model_1.RoleSchema);
+    constructor(resModel) {
+        super(resModel);
+        this.resourceType = resModel.modelName.toLowerCase();
         this.router.use(this.getUser());
     }
     get user() { return this._user; }
     get roles() { return this._roles; }
     get isAuthenticated() { return this._user != null; }
+    get isAdministrator() { return this.isAuthenticated && this.user.admin; }
     hasPermission(action, resource) {
         for (let role of this.roles) {
             for (let perm of role.permissions) {
@@ -34,14 +32,11 @@ class ResourceController extends controller_1.Controller {
         }
         return false;
     }
-    canRead(doc) {
-        if (doc == undefined)
-            return true;
-        return true;
-    }
     canEdit(doc) {
         if (!this.isAuthenticated)
             return false;
+        else if (this.isAdministrator)
+            return true;
         if (doc == undefined)
             return this.hasPermission('create', this.resourceType);
         if (doc.createdBy == this.user.id || doc.createdBy == null)
@@ -51,6 +46,8 @@ class ResourceController extends controller_1.Controller {
     canDelete(doc) {
         if (!this.isAuthenticated)
             return false;
+        else if (this.isAdministrator)
+            return true;
         if (doc.createdBy == this.user.id || doc.createdBy == null)
             return this.hasPermission('delete', this.resourceType);
         return this.hasOverridePermission('delete', this.resourceType);
@@ -70,22 +67,24 @@ class ResourceController extends controller_1.Controller {
         return doc;
     }
     getUser() {
-        const userQuery = this.userModel.findById.bind(this.userModel);
-        const roleQuery = this.roleModel.find.bind(this.roleModel);
-        return (req, res, next) => {
+        const userQuery = user_model_1.UserModel.findById.bind(user_model_1.UserModel);
+        const roleQuery = role_model_1.RoleModel.find.bind(role_model_1.RoleModel);
+        return (req, resp, next) => {
             // Required for preflight in CORS requests
             if (req.method == 'OPTIONS')
-                return res.sendStatus(200);
-            promisify_1.promisify(userQuery, req.session.userId)
-                .then((user) => {
-                this._user = user;
-                return promisify_1.promisify(roleQuery, { _id: user.roles });
-            })
-                .then((roles) => {
-                this._roles = roles;
-                next();
-            })
-                .catch((err) => res.sendStatus(500));
+                return resp.sendStatus(200);
+            let userId = req.session.userId;
+            if (userId) {
+                promisify_1.promisify(userQuery, req.session.userId)
+                    .then((user) => this._user = user)
+                    .then((user) => promisify_1.promisify(roleQuery, { _id: user.roles }))
+                    .then((roles) => this._roles = roles)
+                    .then((roles) => next())
+                    .catch((err) => resp.sendStatus(500));
+            }
+            else {
+                resp.sendStatus(401);
+            }
         };
     }
 }

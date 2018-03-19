@@ -2,9 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const express = require("express");
 const session = require("express-session");
-const mongoose = require("mongoose");
 const connectMongo = require("connect-mongo");
-const MongoStore = connectMongo(session);
 const bodyParser = require("body-parser");
 const cookieParser = require("cookie-parser");
 const user_controller_1 = require("./user.controller");
@@ -14,41 +12,58 @@ const chapter_controller_1 = require("./chapter.controller");
 const article_controller_1 = require("./article.controller");
 const reply_controller_1 = require("./reply.controller");
 class Application {
-    constructor() {
-        this.application = express()
-            .use(bodyParser.json())
-            .use(bodyParser.urlencoded({ extended: false }))
-            .use(cookieParser())
-            .use(session({
+    constructor(connection) {
+        const MongoStore = connectMongo(session);
+        const sessionOptions = {
             secret: process.env.COOKIE_SECRET,
             resave: false,
             saveUninitialized: false,
             store: new MongoStore({
-                mongooseConnection: mongoose.connection,
+                mongooseConnection: connection,
                 autoRemove: 'native'
             })
-        }))
-            .use(this.enableCors)
-            .use('/api/v1', user_controller_1.default.router)
-            .use('/api/v1', role_controller_1.default.router)
-            .use('/api/v1', issue_controller_1.default.router)
-            .use('/api/v1', chapter_controller_1.default.router)
-            .use('/api/v1', article_controller_1.default.router)
-            .use('/api/v1', reply_controller_1.default.router)
-            .use('/api', user_controller_1.default.router)
-            .use('/api', role_controller_1.default.router)
-            .use('/api', issue_controller_1.default.router)
-            .use('/api', chapter_controller_1.default.router)
-            .use('/api', article_controller_1.default.router)
-            .use('/api', reply_controller_1.default.router);
+        };
+        this.application = express()
+            .use(bodyParser.json())
+            .use(bodyParser.urlencoded({ extended: false }))
+            .use(cookieParser())
+            .use(session(sessionOptions))
+            .use(this.enableCors);
+        let controllers = [
+            user_controller_1.default,
+            role_controller_1.default,
+            issue_controller_1.default,
+            chapter_controller_1.default,
+            article_controller_1.default,
+            reply_controller_1.default
+        ];
+        for (let controller of controllers) {
+            this.application
+                .use('/api/v1', controller.router)
+                .use('/api', controller.router);
+        }
     }
     listen(port) {
         port = this.normalizePort(port) || 3000;
         this.application.set('port', port);
         return new Promise((resolve, reject) => {
-            const server = this.application.listen(port, () => resolve(server))
+            this.server = this.application
+                .listen(port, () => resolve(this.server.address()))
                 .on('error', (error) => reject(error));
         });
+    }
+    close() {
+        if (this.server) {
+            return new Promise((resolve, reject) => {
+                this.server.close(() => {
+                    this.server = null;
+                    resolve();
+                });
+            });
+        }
+        else {
+            return Promise.reject(new Error('Server is already closed.'));
+        }
     }
     normalizePort(val) {
         let port = (typeof val === 'string') ? parseInt(val, 10) : val;

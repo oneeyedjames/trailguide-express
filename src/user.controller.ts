@@ -1,137 +1,200 @@
-import { Request, Response } from 'express';
-import { Model, model } from 'mongoose';
+import { Request, Response, NextFunction } from 'express';
+import { Types, Schema, Model, model } from 'mongoose';
 
-import { promisify } from './lib/promisify';
+import { HttpError } from './lib/http';
 import { Authenticator, UserData } from './lib/authenticator';
 
-import { UserDocument, UserSchema } from './user.model';
-import { RoleDocument, RoleSchema } from './role.model';
+import { UserModel, UserDocument, UserSchema } from './user.model';
+import { RoleModel, RoleDocument } from './role.model';
+
+import ObjectId = Schema.Types.ObjectId;
 
 class UserController extends Authenticator {
-	private model: Model<UserDocument>;
+	private static hiddenFields = [ 'passwordHash' ];
+	private static privateFields = [ 'roles', 'admin' ];
+
+	private sessionUser: UserDocument;
 
 	constructor() {
 		super();
 
-		this.model = model<UserDocument>('User', UserSchema);
-
-		// const roleModel = model<RoleDocument>('Role', RoleSchema);
-		//
 		// this.router.use((req, resp, next) => {
 		// 	this.findUser('admin').then((user: UserDocument) => {
-		// 		console.log(user);
-        //
-		// 		if (user.roles.length == 0) {
-		// 			promisify<RoleDocument>(roleModel.findOne.bind(roleModel), {
-		// 				title: 'Administrator'
-		// 			}).then((role: RoleDocument) => {
-		// 				if (!role) {
-		// 					return promisify<RoleDocument>(roleModel.create.bind(roleModel), {
-		// 						title: 'Administrator',
-		// 						description: 'This is an administrator.',
-		// 						permissions: [{
-		// 							action: 'create',
-		// 							resource: 'issue',
-		// 							override: true
-		// 						}, {
-		// 							action: 'update',
-		// 							resource: 'issue',
-		// 							override: true
-		// 						}, {
-		// 							action: 'delete',
-		// 							resource: 'issue',
-		// 							override: true
-		// 						}]
-		// 					});
-		// 				}
-		// 			}).then((role: RoleDocument) => {
-		// 				user.roles.push(role._id);
-		// 				return user.save();
-		// 			}).then((user: UserDocument) => {
-		// 				next();
-		// 			});
+		// 		if (!user.admin) {
+		// 			user.admin = true;
+		// 			return user.save();
+		// 		} else {
+		// 			return user;
 		// 		}
-		// 	}).catch((err: any) => resp.sendStatus(500));
+		// 	})
+		// 	.then((user: UserDocument) => next())
+		// 	.catch((err: any) => resp.sendStatus(500));
 		// });
 
-		this.router.get('/user/me', this.getCurrentUser.bind(this));
-		this.router.get('/user/:username', this.getUser.bind(this));
+		this.router.use(this.initSessionUser.bind(this));
+		this.router.get('/users',    this.getAll.bind(this));
+		this.router.get('/user/me',  this.getMe.bind(this));
+		this.router.get('/user/:id', this.getOne.bind(this));
+		this.router.put('/user/:id', this.update.bind(this));
 	}
 
 	protected findUser(username: string): Promise<UserData> {
-		return promisify<UserData>(this.model.findOne.bind(this.model), {
-			username: username
+		return UserModel.findOne({ username: username }).exec();
+	}
+
+	protected createUser(username: string, passwordHash: string): Promise<UserData> {
+		return RoleModel.findOne({ title: 'Reader' }).exec()
+		.then((role: RoleDocument) => {
+			let now = new Date();
+
+			return UserModel.create({
+				username: username,
+				passwordHash: passwordHash,
+				roles: [ role.id ],
+				admin: false,
+				createdAt: now,
+				modifiedAt: now
+			});
 		});
 	}
 
-	protected createUser(username: string, passwordHash: string) {
-		return this.model.create({
-			username: username,
-			passwordHash: passwordHash
-		});
-	}
-
-	private getUser(req: Request, resp: Response) {
-		this.findUser(req.params.username)
-		.then((user: UserDocument) => this.sanitize(user))
-		.then((userData: object) => resp.json(userData))
-		.catch(this.error(resp));
-	}
-
-	private getCurrentUser(req: Request, resp: Response) {
+	private initSessionUser(req: Request, resp: Response, next: NextFunction) {
 		let userId = req.session.userId;
 		if (userId) {
-			let userDoc: UserDocument;
+			UserModel.findById(userId).populate('roles').exec()
+			.then((user: UserDocument) => this.sessionUser = user)
+			.then((user: UserDocument) => next())
+			.catch((err: Error) => next());
+		} else {
+			next();
+		}
+	}
 
-			let query = this.model.findById.bind(this.model);
+	private getAll(req: Request, resp: Response) {
+		if (this.sessionUser) {
+			if (!this.sessionUser.admin)
+				throw new HttpError(401);
 
-			const roleModel = model<RoleDocument>('Role', RoleSchema);
+			UserModel.find().populate('roles').exec()
+			.then((users: UserDocument[]) => {
+				let userData: object[] = [];
 
-			promisify<UserDocument>(query, userId)
-			.then((user: UserDocument) => {
-				userDoc = user;
+				for (let user of users)
+					userData.push(this.sanitize(user));
 
-				return promisify<RoleDocument[]>(roleModel.find.bind(roleModel), {
-					_id: user.roles
-				});
+				resp.json(userData);
 			})
-			.then((roles: RoleDocument[]) => this.sanitize(userDoc, roles))
-			.then((userData: object) => resp.json(userData))
 			.catch(this.error(resp));
+
 		} else {
 			resp.sendStatus(401);
 		}
 	}
 
-	private sanitize(user: UserDocument, roles?: RoleDocument[]): object {
+	private getOne(req: Request, resp: Response) {
+		let id = this.parseId(req.params.id);
+		let args = id ? { _id: id } : { username: req.params.id };
+
+		UserModel.findOne(args).populate('roles').exec()
+		.then((user: UserDocument) => this.sanitize(user))
+		.then((userData: object) => resp.json(userData))
+		.catch(this.error(resp));
+	}
+
+	private getMe(req: Request, resp: Response) {
+		if (this.sessionUser) {
+			resp.json(this.sanitize(this.sessionUser));
+		} else {
+			resp.sendStatus(401);
+		}
+	}
+
+	private update(req: Request, resp: Response) {
+		UserModel.findById(req.params.id).exec()
+		.then(this.authorize.bind(this))
+		.then((user: UserDocument) => {
+			for (let key in req.body)
+				user[key] = req.body[key];
+
+			user.modifiedAt = new Date();
+
+			return user.save();
+		})
+		.then((user: UserDocument) => user.populate('roles').execPopulate())
+		.then((user: UserDocument) => this.sanitize(user))
+		.then((userData: object) => resp.json(userData))
+		.catch(this.error(resp));
+	}
+
+	private delete(req: Request, resp: Response) {
+		UserModel.findById(req.params.id).exec()
+		.then(this.authorize.bind(this))
+		.then((user: UserDocument) => user.remove())
+		.then((user: UserDocument) => resp.sendStatus(204))
+		.catch(this.error(resp));
+	}
+
+	private parseId(id: string): Types.ObjectId {
+		if (id.length == 12 || id.length == 24) {
+			try {
+				return Types.ObjectId(id);
+			} catch (e) {
+				return null;
+			}
+		}
+
+		return null;
+	}
+
+	private authorize(user: UserDocument): UserDocument {
 		if (!user)
-			throw new Error('Not Found');
+			throw new HttpError(404);
+
+		if (!this.sessionUser)
+			throw new HttpError(401);
+
+		if (this.sessionUser.id != user.id && !this.sessionUser.admin)
+			throw new HttpError(401);
+
+		return user;
+	}
+
+	private sanitize(user: UserDocument): object {
+		if (!user) throw new HttpError(404);
+
+		let isPrivate = user.id == this.sessionUser.id || this.sessionUser.admin;
 
 		let userData = {};
 
 		UserSchema.eachPath((path, type) => {
-			if (path != 'passwordHash' && path != 'roles')
-				userData[path] = user[path];
-		});
+			if (UserController.hiddenFields.indexOf(path) >= 0)
+				return;
 
-		if (roles != undefined)
-			userData['roles'] = roles;
+			if (UserController.privateFields.indexOf(path) >= 0 && !isPrivate)
+				return;
+
+			userData[path] = user[path];
+		});
 
 		return userData;
 	}
 
 	private error(resp: Response): (err: Error) => void {
 		return (err: Error) => {
-			switch (err.message) {
-				case 'Unauthorized':
-					resp.sendStatus(401);
-					break;
-				case 'Not Found':
-					resp.sendStatus(404);
-					break;
-				default:
-					resp.status(500).json(err);
-					break;
+			if (err instanceof HttpError) {
+				resp.status(err.status).json({
+					error: {
+						name: err.name,
+						message: err.message
+					}
+				});
+			} else {
+				resp.status(500).json({
+					error: {
+						name: err.name || 'Error',
+						message: err.message || err
+					}
+				});
 			}
 		}
 	}

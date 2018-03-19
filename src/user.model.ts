@@ -1,13 +1,14 @@
-import { Document, Schema, HookNextFunction } from 'mongoose';
+import { Document, Schema, Types, HookNextFunction, model } from 'mongoose';
 
 import { Role } from './role.model';
 
-const ObjectId = Schema.Types.ObjectId;
+import ObjectId = Schema.Types.ObjectId;
 
 export interface User {
 	username: string;
 	passwordHash: string;
-	roles: typeof ObjectId[];
+	roles: Types.Array<ObjectId>;
+	admin: boolean;
 	createdAt: Date;
 	modifiedAt: Date;
 }
@@ -21,6 +22,7 @@ export const UserSchema = new Schema({
 		type: ObjectId,
 		ref: 'Role'
 	}],
+	admin: Boolean,
 	createdAt: Date,
 	modifiedAt: Date
 }).pre('save', (next: HookNextFunction) => {
@@ -31,3 +33,5 @@ export const UserSchema = new Schema({
 
 	next();
 });
+
+export const UserModel = model<UserDocument>('User', UserSchema);

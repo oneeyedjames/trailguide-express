@@ -1,20 +1,13 @@
-import { Schema } from 'mongoose';
+import { Schema, model } from 'mongoose';
 
 import { Resource, ResourceDocument, UserRef } from './resource.model';
 
-const ObjectId = Schema.Types.ObjectId;
+import ObjectId = Schema.Types.ObjectId;
 
 interface Question {
 	heading: string;
 	keyword: string;
 	message: string;
-}
-
-interface QuestionSet {
-	observation: Question;
-	interpretation: Question;
-	application: Question;
-	implementation: Question;
 }
 
 export interface Article extends Resource {
@@ -23,13 +16,18 @@ export interface Article extends Resource {
 	bibleReading: string;
 	extraReading: string;
 	content: string;
-	questions?: QuestionSet;
 	publishedAt: Date;
+	questions?: {
+		observation: Question;
+		interpretation: Question;
+		application: Question;
+		implementation: Question;
+	};
 }
 
 export interface ArticleDocument extends Article, ResourceDocument {}
 
-export let ArticleSchema = new Schema({
+export const ArticleSchema = new Schema({
 	chapter: {
 		type: ObjectId,
 		ref: 'Chapter',
@@ -39,10 +37,12 @@ export let ArticleSchema = new Schema({
 	bibleReading: String,
 	extraReading: String,
 	content: String,
-	questions: Object,
 	publishedAt: Date,
+	questions: Object,
 	createdBy: UserRef,
 	createdAt: Date,
 	modifiedBy: UserRef,
 	modifiedAt: Date
 });
+
+export const ArticleModel = model<ArticleDocument>('Article', ArticleSchema);

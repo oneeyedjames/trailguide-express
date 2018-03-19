@@ -1,8 +1,8 @@
-import { Schema } from 'mongoose';
+import { Schema, model } from 'mongoose';
 
 import { Resource, ResourceDocument, UserRef } from './resource.model';
 
-const ObjectId = Schema.Types.ObjectId;
+import ObjectId = Schema.Types.ObjectId;
 
 export interface Chapter extends Resource {
 	issue: typeof ObjectId;
@@ -14,7 +14,7 @@ export interface Chapter extends Resource {
 
 export interface ChapterDocument extends Chapter, ResourceDocument {}
 
-export let ChapterSchema = new Schema({
+export const ChapterSchema = new Schema({
 	issue: {
 		type: ObjectId,
 		ref: 'Issue',
@@ -29,3 +29,5 @@ export let ChapterSchema = new Schema({
 	modifiedBy: UserRef,
 	modifiedAt: Date
 });
+
+export const ChapterModel = model<ChapterDocument>('Chapter', ChapterSchema);

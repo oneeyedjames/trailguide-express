@@ -1,8 +1,8 @@
-import { Schema } from 'mongoose';
+import { Schema, model } from 'mongoose';
 
 import { Resource, ResourceDocument, UserRef } from './resource.model';
 
-const ObjectId = Schema.Types.ObjectId;
+import ObjectId = Schema.Types.ObjectId;
 
 export interface Reply extends Resource {
 	article: typeof ObjectId;
@@ -29,3 +29,5 @@ export const ReplySchema = new Schema({
 	modifiedBy: UserRef,
 	modifiedAt: Date
 });
+
+export const ReplyModel = model<ReplyDocument>('Reply', ReplySchema);

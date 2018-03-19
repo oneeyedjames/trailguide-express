@@ -1,10 +1,10 @@
 import { ResourceController } from './resource.controller';
 
-import { RoleDocument, RoleSchema } from './role.model';
+import { RoleModel, RoleDocument } from './role.model';
 
 export class RoleController extends ResourceController<RoleDocument> {
 	constructor() {
-		super('Role', RoleSchema);
+		super(RoleModel);
 
 		this.setRoutes('/roles', '/role');
 	}

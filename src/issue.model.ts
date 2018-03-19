@@ -1,4 +1,4 @@
-import { Schema } from 'mongoose';
+import { Schema, model } from 'mongoose';
 
 import { Resource, ResourceDocument, UserRef } from './resource.model';
 
@@ -8,11 +8,12 @@ export interface Issue extends Resource {
 	volumeNumber: number;
 	issueNumber: number;
 	publishedAt: Date;
+	isFree: boolean;
 }
 
 export interface IssueDocument extends Issue, ResourceDocument {}
 
-export let IssueSchema = new Schema({
+export const IssueSchema = new Schema({
 	title: String,
 	description: String,
 	volumeNumber: Number,
@@ -23,3 +24,5 @@ export let IssueSchema = new Schema({
 	modifiedBy: UserRef,
 	modifiedAt: Date
 });
+
+export const IssueModel = model<IssueDocument>('Issue', IssueSchema);

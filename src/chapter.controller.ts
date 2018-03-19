@@ -1,17 +1,22 @@
 import { ResourceController } from './resource.controller';
 
-import { IssueDocument }				  from './issue.model';
-import { ChapterDocument, ChapterSchema } from './chapter.model';
+import { IssueDocument }				 from './issue.model';
+import { ChapterModel, ChapterDocument } from './chapter.model';
+import { ArticleDocument }               from './article.model';
 
 export class ChapterController extends ResourceController<ChapterDocument> {
 	constructor() {
-		super('Chapter', ChapterSchema);
+		super(ChapterModel);
 
 		this.setRoutes('/chapters', '/chapter');
 
 		this.addSubRoute('chapters', 'Issue', (issue: IssueDocument): object => {
 			return { issue: issue._id };
 		});
+
+		this.addSubRoute('chapter', 'Article', (article: ArticleDocument): object => {
+			return { _id: article.chapter };
+		}, true);
 	}
 }
 

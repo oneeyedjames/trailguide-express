@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = require("mongoose");
-const ObjectId = mongoose_1.Schema.Types.ObjectId;
+var ObjectId = mongoose_1.Schema.Types.ObjectId;
 exports.UserSchema = new mongoose_1.Schema({
     username: String,
     passwordHash: String,
@@ -9,6 +9,7 @@ exports.UserSchema = new mongoose_1.Schema({
             type: ObjectId,
             ref: 'Role'
         }],
+    admin: Boolean,
     createdAt: Date,
     modifiedAt: Date
 }).pre('save', (next) => {
@@ -17,3 +18,4 @@ exports.UserSchema = new mongoose_1.Schema({
         this.createdAt = this.modifiedAt;
     next();
 });
+exports.UserModel = mongoose_1.model('User', exports.UserSchema);
