@@ -1,6 +1,6 @@
 import { Document, Schema } from 'mongoose';
 
-const ObjectId = Schema.Types.ObjectId;
+import ObjectId = Schema.Types.ObjectId;
 
 export const UserRef = { type: ObjectId, ref: 'User', required: true };
 

@@ -1,11 +1,10 @@
 import { Server } from 'http';
 
-import * as express	from 'express';
-import * as session	from 'express-session';
+import * as express  from 'express';
+import * as session  from 'express-session';
 import * as mongoose from 'mongoose';
 
 import * as connectMongo from 'connect-mongo';
-const MongoStore = connectMongo(session);
 
 import * as bodyParser   from 'body-parser';
 import * as cookieParser from 'cookie-parser';
@@ -28,23 +27,25 @@ export class Application {
 	public application: express.Application;
 	public server: Server;
 
-	constructor() {
-		this.application = express()
-		.use(bodyParser.json())
-		.use(bodyParser.urlencoded({ extended: false }))
-		.use(cookieParser())
-		.use(session({
+	constructor(connection: mongoose.Connection) {
+		const MongoStore = connectMongo(session);
+
+		const sessionOptions = {
 			secret: process.env.COOKIE_SECRET,
 			resave: false,
 			saveUninitialized: false,
 			store: new MongoStore({
-				mongooseConnection: mongoose.connection,
+				mongooseConnection: connection,
 				autoRemove: 'native'
 			})
-		}))
-		.use(this.enableCors)
-		.get('/api/v1', (req, resp) => resp.sendStatus(200))
-		.get('/api', (req, resp) => resp.sendStatus(200));
+		};
+
+		this.application = express()
+		.use(bodyParser.json())
+		.use(bodyParser.urlencoded({ extended: false }))
+		.use(cookieParser())
+		.use(session(sessionOptions))
+		.use(this.enableCors);
 
 		let controllers = [
 			UserController,
@@ -96,7 +97,11 @@ export class Application {
 		return port;
 	}
 
-	private enableCors(req, res, next) {
+	private enableCors(
+		req: express.Request,
+		res: express.Response,
+		next: express.NextFunction
+	) {
 		res.header('Access-Control-Allow-Origin', 'http://localhost:4200');
 		res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
 		res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');

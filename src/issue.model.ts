@@ -1,4 +1,4 @@
-import { Schema, Model, model } from 'mongoose';
+import { Schema, model } from 'mongoose';
 
 import { Resource, ResourceDocument, UserRef } from './resource.model';
 
