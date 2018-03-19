@@ -1,26 +1,22 @@
 import { Request, Response, NextFunction } from 'express';
 import { Types, Schema, Model, model } from 'mongoose';
 
-import { promisify } from './lib/promisify';
 import { HttpError } from './lib/http';
 import { Authenticator, UserData } from './lib/authenticator';
 
-import { UserDocument, UserSchema } from './user.model';
-import { RoleDocument, RoleSchema } from './role.model';
+import { UserModel, UserDocument, UserSchema } from './user.model';
+import { RoleModel, RoleDocument } from './role.model';
 
 import ObjectId = Schema.Types.ObjectId;
 
 class UserController extends Authenticator {
-	private static privateFields = ['passwordHash'];
-	private static protectedFields = ['roles', 'admin'];
+	private static hiddenFields = [ 'passwordHash' ];
+	private static privateFields = [ 'roles', 'admin' ];
 
-	private model: Model<UserDocument>;
 	private sessionUser: UserDocument;
 
 	constructor() {
 		super();
-
-		this.model = model<UserDocument>('User', UserSchema);
 
 		// this.router.use((req, resp, next) => {
 		// 	this.findUser('admin').then((user: UserDocument) => {
@@ -43,26 +39,29 @@ class UserController extends Authenticator {
 	}
 
 	protected findUser(username: string): Promise<UserData> {
-		return promisify<UserData>(this.model.findOne.bind(this.model), {
-			username: username
-		});
+		return UserModel.findOne({ username: username }).exec();
 	}
 
-	protected createUser(username: string, passwordHash: string) {
-		let now = new Date();
+	protected createUser(username: string, passwordHash: string): Promise<UserData> {
+		return RoleModel.findOne({ title: 'Reader' }).exec()
+		.then((role: RoleDocument) => {
+			let now = new Date();
 
-		return this.model.create({
-			username: username,
-			passwordHash: passwordHash,
-			createdAt: now,
-			modifiedAt: now
+			return UserModel.create({
+				username: username,
+				passwordHash: passwordHash,
+				roles: [ role.id ],
+				admin: false,
+				createdAt: now,
+				modifiedAt: now
+			});
 		});
 	}
 
 	private initSessionUser(req: Request, resp: Response, next: NextFunction) {
 		let userId = req.session.userId;
 		if (userId) {
-			this.model.findById(userId).populate('roles').exec()
+			UserModel.findById(userId).populate('roles').exec()
 			.then((user: UserDocument) => this.sessionUser = user)
 			.then((user: UserDocument) => next())
 			.catch((err: Error) => next());
@@ -76,7 +75,7 @@ class UserController extends Authenticator {
 			if (!this.sessionUser.admin)
 				throw new HttpError(401);
 
-			this.model.find().populate('roles').exec()
+			UserModel.find().populate('roles').exec()
 			.then((users: UserDocument[]) => {
 				let userData: object[] = [];
 
@@ -96,7 +95,7 @@ class UserController extends Authenticator {
 		let id = this.parseId(req.params.id);
 		let args = id ? { _id: id } : { username: req.params.id };
 
-		this.model.findOne(args).populate('roles').exec()
+		UserModel.findOne(args).populate('roles').exec()
 		.then((user: UserDocument) => this.sanitize(user))
 		.then((userData: object) => resp.json(userData))
 		.catch(this.error(resp));
@@ -111,7 +110,7 @@ class UserController extends Authenticator {
 	}
 
 	private update(req: Request, resp: Response) {
-		this.model.findById(req.params.id).exec()
+		UserModel.findById(req.params.id).exec()
 		.then(this.authorize.bind(this))
 		.then((user: UserDocument) => {
 			for (let key in req.body)
@@ -128,7 +127,7 @@ class UserController extends Authenticator {
 	}
 
 	private delete(req: Request, resp: Response) {
-		this.model.findById(req.params.id).exec()
+		UserModel.findById(req.params.id).exec()
 		.then(this.authorize.bind(this))
 		.then((user: UserDocument) => user.remove())
 		.then((user: UserDocument) => resp.sendStatus(204))
@@ -163,15 +162,15 @@ class UserController extends Authenticator {
 	private sanitize(user: UserDocument): object {
 		if (!user) throw new HttpError(404);
 
-		let allowProtected = user.id == this.sessionUser.id || this.sessionUser.admin;
+		let isPrivate = user.id == this.sessionUser.id || this.sessionUser.admin;
 
 		let userData = {};
 
 		UserSchema.eachPath((path, type) => {
-			if (UserController.privateFields.indexOf(path) >= 0)
+			if (UserController.hiddenFields.indexOf(path) >= 0)
 				return;
 
-			if (UserController.protectedFields.indexOf(path) >= 0 && !allowProtected)
+			if (UserController.privateFields.indexOf(path) >= 0 && !isPrivate)
 				return;
 
 			userData[path] = user[path];

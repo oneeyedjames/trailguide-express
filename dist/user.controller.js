@@ -1,14 +1,13 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = require("mongoose");
-const promisify_1 = require("./lib/promisify");
 const http_1 = require("./lib/http");
 const authenticator_1 = require("./lib/authenticator");
 const user_model_1 = require("./user.model");
+const role_model_1 = require("./role.model");
 class UserController extends authenticator_1.Authenticator {
     constructor() {
         super();
-        this.model = mongoose_1.model('User', user_model_1.UserSchema);
         // this.router.use((req, resp, next) => {
         // 	this.findUser('admin').then((user: UserDocument) => {
         // 		if (!user.admin) {
@@ -28,23 +27,26 @@ class UserController extends authenticator_1.Authenticator {
         this.router.put('/user/:id', this.update.bind(this));
     }
     findUser(username) {
-        return promisify_1.promisify(this.model.findOne.bind(this.model), {
-            username: username
-        });
+        return user_model_1.UserModel.findOne({ username: username }).exec();
     }
     createUser(username, passwordHash) {
-        let now = new Date();
-        return this.model.create({
-            username: username,
-            passwordHash: passwordHash,
-            createdAt: now,
-            modifiedAt: now
+        return role_model_1.RoleModel.findOne({ title: 'Reader' }).exec()
+            .then((role) => {
+            let now = new Date();
+            return user_model_1.UserModel.create({
+                username: username,
+                passwordHash: passwordHash,
+                roles: [role.id],
+                admin: false,
+                createdAt: now,
+                modifiedAt: now
+            });
         });
     }
     initSessionUser(req, resp, next) {
         let userId = req.session.userId;
         if (userId) {
-            this.model.findById(userId).populate('roles').exec()
+            user_model_1.UserModel.findById(userId).populate('roles').exec()
                 .then((user) => this.sessionUser = user)
                 .then((user) => next())
                 .catch((err) => next());
@@ -57,7 +59,7 @@ class UserController extends authenticator_1.Authenticator {
         if (this.sessionUser) {
             if (!this.sessionUser.admin)
                 throw new http_1.HttpError(401);
-            this.model.find().populate('roles').exec()
+            user_model_1.UserModel.find().populate('roles').exec()
                 .then((users) => {
                 let userData = [];
                 for (let user of users)
@@ -73,7 +75,7 @@ class UserController extends authenticator_1.Authenticator {
     getOne(req, resp) {
         let id = this.parseId(req.params.id);
         let args = id ? { _id: id } : { username: req.params.id };
-        this.model.findOne(args).populate('roles').exec()
+        user_model_1.UserModel.findOne(args).populate('roles').exec()
             .then((user) => this.sanitize(user))
             .then((userData) => resp.json(userData))
             .catch(this.error(resp));
@@ -87,7 +89,7 @@ class UserController extends authenticator_1.Authenticator {
         }
     }
     update(req, resp) {
-        this.model.findById(req.params.id).exec()
+        user_model_1.UserModel.findById(req.params.id).exec()
             .then(this.authorize.bind(this))
             .then((user) => {
             for (let key in req.body)
@@ -101,7 +103,7 @@ class UserController extends authenticator_1.Authenticator {
             .catch(this.error(resp));
     }
     delete(req, resp) {
-        this.model.findById(req.params.id).exec()
+        user_model_1.UserModel.findById(req.params.id).exec()
             .then(this.authorize.bind(this))
             .then((user) => user.remove())
             .then((user) => resp.sendStatus(204))
@@ -130,12 +132,12 @@ class UserController extends authenticator_1.Authenticator {
     sanitize(user) {
         if (!user)
             throw new http_1.HttpError(404);
-        let allowProtected = user.id == this.sessionUser.id || this.sessionUser.admin;
+        let isPrivate = user.id == this.sessionUser.id || this.sessionUser.admin;
         let userData = {};
         user_model_1.UserSchema.eachPath((path, type) => {
-            if (UserController.privateFields.indexOf(path) >= 0)
+            if (UserController.hiddenFields.indexOf(path) >= 0)
                 return;
-            if (UserController.protectedFields.indexOf(path) >= 0 && !allowProtected)
+            if (UserController.privateFields.indexOf(path) >= 0 && !isPrivate)
                 return;
             userData[path] = user[path];
         });
@@ -162,6 +164,6 @@ class UserController extends authenticator_1.Authenticator {
         };
     }
 }
-UserController.privateFields = ['passwordHash'];
-UserController.protectedFields = ['roles', 'admin'];
+UserController.hiddenFields = ['passwordHash'];
+UserController.privateFields = ['roles', 'admin'];
 exports.default = new UserController();
