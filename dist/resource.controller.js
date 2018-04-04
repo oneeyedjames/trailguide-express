@@ -15,6 +15,8 @@ class ResourceController extends controller_1.Controller {
     get isAuthenticated() { return this._user != null; }
     get isAdministrator() { return this.isAuthenticated && this.user.admin; }
     hasPermission(action, resource) {
+        if (this.isAdministrator)
+            return true;
         for (let role of this.roles) {
             for (let perm of role.permissions) {
                 if (perm.action == action && perm.resource == resource)
@@ -24,6 +26,8 @@ class ResourceController extends controller_1.Controller {
         return false;
     }
     hasOverridePermission(action, resource) {
+        if (this.isAdministrator)
+            return true;
         for (let role of this.roles) {
             for (let perm of role.permissions) {
                 if (perm.action == action && perm.resource == resource && perm.override)
@@ -32,11 +36,22 @@ class ResourceController extends controller_1.Controller {
         }
         return false;
     }
+    searchArgs(args) {
+        args = super.searchArgs(args);
+        if (!this.hasOverridePermission('read', this.resourceType))
+            args['createdBy'] = this.user.id;
+        return args;
+    }
+    canRead(doc) {
+        if (!this.isAuthenticated)
+            return false;
+        if (doc == undefined || doc.createdBy == this.user.id || doc.createdBy == null)
+            return this.hasPermission('read', this.resourceType);
+        return this.hasOverridePermission('read', this.resourceType);
+    }
     canEdit(doc) {
         if (!this.isAuthenticated)
             return false;
-        else if (this.isAdministrator)
-            return true;
         if (doc == undefined)
             return this.hasPermission('create', this.resourceType);
         if (doc.createdBy == this.user.id || doc.createdBy == null)
@@ -46,8 +61,6 @@ class ResourceController extends controller_1.Controller {
     canDelete(doc) {
         if (!this.isAuthenticated)
             return false;
-        else if (this.isAdministrator)
-            return true;
         if (doc.createdBy == this.user.id || doc.createdBy == null)
             return this.hasPermission('delete', this.resourceType);
         return this.hasOverridePermission('delete', this.resourceType);

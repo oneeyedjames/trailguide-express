@@ -31,6 +31,9 @@ export class ResourceController<T extends ResourceDocument> extends Controller<T
 	}
 
 	protected hasPermission(action: string, resource: string): boolean {
+		if (this.isAdministrator)
+			return true;
+
 		for (let role of this.roles) {
 			for (let perm of role.permissions) {
 				if (perm.action == action && perm.resource == resource)
@@ -42,6 +45,9 @@ export class ResourceController<T extends ResourceDocument> extends Controller<T
 	}
 
 	protected hasOverridePermission(action: string, resource: string): boolean {
+		if (this.isAdministrator)
+			return true;
+
 		for (let role of this.roles) {
 			for (let perm of role.permissions) {
 				if (perm.action == action && perm.resource == resource && perm.override)
@@ -52,11 +58,28 @@ export class ResourceController<T extends ResourceDocument> extends Controller<T
 		return false;
 	}
 
+	protected searchArgs(args: object): object {
+		args = super.searchArgs(args);
+
+		if (!this.hasOverridePermission('read', this.resourceType))
+			args['createdBy'] = this.user.id;
+
+		return args;
+	}
+
+	protected canRead(doc?: T): boolean {
+		if (!this.isAuthenticated)
+			return false;
+
+		if (doc == undefined || doc.createdBy == this.user.id || doc.createdBy == null)
+			return this.hasPermission('read', this.resourceType);
+
+		return this.hasOverridePermission('read', this.resourceType);
+	}
+
 	protected canEdit(doc?: T): boolean {
 		if (!this.isAuthenticated)
 			return false;
-		else if (this.isAdministrator)
-			return true;
 
 		if (doc == undefined)
 			return this.hasPermission('create', this.resourceType);
@@ -70,8 +93,6 @@ export class ResourceController<T extends ResourceDocument> extends Controller<T
 	protected canDelete(doc: T): boolean {
 		if (!this.isAuthenticated)
 			return false;
-		else if (this.isAdministrator)
-			return true;
 
 		if (doc.createdBy == this.user.id || doc.createdBy == null)
 			return this.hasPermission('delete', this.resourceType);
