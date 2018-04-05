@@ -9,6 +9,9 @@ class IssueController extends resource_controller_1.ResourceController {
         this.addSubRoute('issue', 'Chapter', (chapter) => {
             return { _id: chapter.issue };
         }, true);
+        this.addSubRoute('issue', 'Purchase', (purchase) => {
+            return { _id: purchase.issue };
+        }, true);
     }
 }
 exports.IssueController = IssueController;

@@ -6,6 +6,9 @@ class PurchaseController extends resource_controller_1.ResourceController {
     constructor() {
         super(purchase_model_1.PurchaseModel);
         this.setRoutes('/purchases', '/purchase');
+        this.addSubRoute('purchases', 'Issue', (issue) => {
+            return { issue: issue._id };
+        });
     }
 }
 exports.PurchaseController = PurchaseController;

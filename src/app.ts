@@ -16,6 +16,7 @@ import IssueController   from './issue.controller';
 import ChapterController from './chapter.controller';
 import ArticleController from './article.controller';
 import ReplyController   from './reply.controller';
+import PurchaseController from './purchase.controller';
 
 export interface Address {
 	port: number;
@@ -53,7 +54,8 @@ export class Application {
 			IssueController,
 			ChapterController,
 			ArticleController,
-			ReplyController
+			ReplyController,
+			PurchaseController
 		];
 
 		for (let controller of controllers) {

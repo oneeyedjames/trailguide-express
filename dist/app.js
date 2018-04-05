@@ -11,6 +11,7 @@ const issue_controller_1 = require("./issue.controller");
 const chapter_controller_1 = require("./chapter.controller");
 const article_controller_1 = require("./article.controller");
 const reply_controller_1 = require("./reply.controller");
+const purchase_controller_1 = require("./purchase.controller");
 class Application {
     constructor(connection) {
         const MongoStore = connectMongo(session);
@@ -35,7 +36,8 @@ class Application {
             issue_controller_1.default,
             chapter_controller_1.default,
             article_controller_1.default,
-            reply_controller_1.default
+            reply_controller_1.default,
+            purchase_controller_1.default
         ];
         for (let controller of controllers) {
             this.application
