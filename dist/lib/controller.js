@@ -38,7 +38,8 @@ class Controller {
                 promisify_1.promisify(that.model.findById.bind(that.model), req.params.id)
                     .then((doc) => {
                     let fn = singular ? this.model.findOne : this.model.find;
-                    return promisify_1.promisify(fn.bind(this.model), resolve(doc));
+                    let args = singular ? resolve(doc) : this.searchArgs(resolve(doc));
+                    return promisify_1.promisify(fn.bind(this.model), args);
                 })
                     .then((res) => {
                     if (singular && res == null)
@@ -53,7 +54,9 @@ class Controller {
                 const postCallback = (req, resp) => {
                     promisify_1.promisify(that.model.findById.bind(that.model), req.params.id)
                         .then((doc) => this.merge(req.body, resolve(doc)))
+                        .then((doc) => this.beforeCreate(doc))
                         .then((doc) => this.model.create(doc))
+                        .then((doc) => this.afterCreate(doc))
                         .then((doc) => this.addLinks(doc, req))
                         .then((doc) => resp.status(201).json(doc))
                         .catch(this.error(resp));

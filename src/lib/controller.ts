@@ -68,7 +68,8 @@ export class Controller<T extends Document> {
 				promisify<TParent>(that.model.findById.bind(that.model), req.params.id)
 				.then((doc: TParent) => {
 					let fn = singular ? this.model.findOne : this.model.find;
-					return promisify<T|T[]>(fn.bind(this.model), resolve(doc));
+					let args = singular ? resolve(doc) : this.searchArgs(resolve(doc));
+					return promisify<T|T[]>(fn.bind(this.model), args);
 				})
 				.then((res: T|T[]) => {
 					if (singular && res == null)
@@ -86,7 +87,9 @@ export class Controller<T extends Document> {
 				const postCallback = (req: Request, resp: Response) => {
 					promisify<TParent>(that.model.findById.bind(that.model), req.params.id)
 					.then((doc: TParent) => this.merge(req.body, resolve(doc)))
+					.then((doc: T) => this.beforeCreate(doc))
 					.then((doc: T) => this.model.create(doc))
+					.then((doc: T) => this.afterCreate(doc))
 					.then((doc: T) => this.addLinks(doc, req))
 					.then((doc: T) => resp.status(201).json(doc))
 					.catch(this.error(resp));
